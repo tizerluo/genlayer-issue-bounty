@@ -11,5 +11,8 @@ def strict_vm(direct_vm):
     direct_vm.warp('2026-10-12T00:00:00Z')
 
 @pytest.fixture
-def escrow(direct_deploy):
-    return direct_deploy(CONTRACT, 259200, 3)
+def escrow(direct_deploy, direct_vm):
+    contract = direct_deploy(CONTRACT, 259200, 3)
+    from genlayer import Address
+    direct_vm.sender = Address(direct_vm.sender)
+    return contract

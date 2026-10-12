@@ -40,6 +40,34 @@ def _canonical(obj: typing.Any) -> str:
     return json.dumps(obj, sort_keys=True, ensure_ascii=False)
 
 
+def _gh_response(url: str, api: bool = True):
+    # 只在 nondet 闭包中调用；不把响应体放入错误消息。
+    headers = {"User-Agent": GITHUB_UA}
+    if api:
+        headers["Accept"] = "application/vnd.github+json"
+    response = gl.nondet.web.get(url, headers=headers)
+    status = getattr(response, "status", None)
+    if status is None:
+        status = getattr(response, "status_code", None)
+    if type(status) is not int:
+        _error("BAD_HTTP_RESPONSE", "EXTERNAL")
+    if status == 404:
+        return None
+    if not 200 <= status < 300:
+        _error(f"GITHUB_HTTP_{status}", "TRANSIENT")
+    return response
+
+
+def _gh_json(url: str) -> typing.Any:
+    response = _gh_response(url)
+    if response is None:
+        return None
+    try:
+        return json.loads(response.body)
+    except (ValueError, TypeError, UnicodeError):
+        _error("BAD_GITHUB_JSON", "EXTERNAL")
+
+
 def _positive_id(value: int, code: str) -> None:
     if type(value) is not int or not 0 < value <= U64_MAX:
         _error(code)
@@ -167,6 +195,77 @@ class IssueBountyEscrow(gl.Contract):
         if type(bounty_id) is not int or not 0 <= bounty_id < len(self.bounties):
             _error("BOUNTY_NOT_FOUND")
         return self.bounties[bounty_id]
+
+    @gl.public.write
+    def bind_github(self, github_login: str) -> None:
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}", github_login):
+            _error("INVALID_LOGIN")
+        sender = gl.message.sender_address
+        sender_hex = sender.as_hex.lower()
+        login = github_login.lower()
+        def fetch_binding() -> str:
+            user = _gh_json(f"https://api.github.com/users/{login}")
+            if user is None:
+                _error("GITHUB_USER_NOT_FOUND")
+            if not isinstance(user, dict) or type(user.get("id")) is not int or not 0 < user["id"] <= U64_MAX:
+                _error("BAD_GITHUB_USER", "EXTERNAL")
+            gists = _gh_json(f"https://api.github.com/users/{login}/gists?per_page=100")
+            if not isinstance(gists, list):
+                _error("BAD_GITHUB_GISTS", "EXTERNAL")
+            marker = BIND_PREFIX + sender_hex
+            found = any(isinstance(g, dict) and isinstance(g.get("description"), str)
+                        and g["description"].strip() == marker for g in gists)
+            return _canonical({"github_id": user["id"], "login": str(user["login"]).lower(), "proof_found": found})
+        binding = json.loads(gl.eq_principle.strict_eq(fetch_binding))
+        if not binding["proof_found"]:
+            _error("BIND_PROOF_NOT_FOUND")
+        github_id = u64(binding["github_id"])
+        previous_id = self.wallet_to_github_id.get(sender, u64(0))
+        if previous_id:
+            self.github_id_to_wallet.pop(str(previous_id), None)
+        previous_wallet = self.github_id_to_wallet.get(str(github_id), Address(ZERO_ADDRESS))
+        if previous_wallet != sender and previous_wallet != Address(ZERO_ADDRESS):
+            self.wallet_to_github_id.pop(previous_wallet, None)
+            self.wallet_to_github_login.pop(previous_wallet, None)
+        self.wallet_to_github_id[sender] = github_id
+        self.wallet_to_github_login[sender] = binding["login"]
+        self.github_id_to_wallet[str(github_id)] = sender
+
+    @gl.public.write.payable
+    def create_bounty(self, repo: str, issue_number: int, criteria: list[str], deadline: int, min_score: int) -> int:
+        if not re.fullmatch(r"[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}", repo):
+            _error("INVALID_REPO")
+        repo = repo.lower()
+        _positive_id(issue_number, "INVALID_ISSUE_NUMBER")
+        clean = _criteria(criteria)
+        now = _now()
+        if type(deadline) is not int or not now + MIN_DEADLINE_DELAY <= deadline <= now + MAX_DEADLINE_WINDOW:
+            _error("INVALID_DEADLINE")
+        if type(min_score) is not int or not 1 <= min_score <= 10:
+            _error("INVALID_MIN_SCORE")
+        def fetch_issue() -> str:
+            issue = _gh_json(f"https://api.github.com/repos/{repo}/issues/{issue_number}")
+            if issue is None:
+                return _canonical({"exists": False})
+            if not isinstance(issue, dict):
+                _error("BAD_GITHUB_ISSUE", "EXTERNAL")
+            return _canonical({"exists": True, "is_pull_request": "pull_request" in issue,
+                               "state": issue.get("state", ""),
+                               "title": str(issue.get("title") or "")[:MAX_ISSUE_TITLE_CHARS],
+                               "body": str(issue.get("body") or "").replace("\r\n", "\n").strip()[:MAX_ISSUE_SNAPSHOT_CHARS]})
+        issue = json.loads(gl.eq_principle.strict_eq(fetch_issue))
+        if not issue["exists"]:
+            _error("ISSUE_NOT_FOUND")
+        if issue["is_pull_request"]:
+            _error("ISSUE_IS_PULL_REQUEST")
+        if issue["state"] != "open":
+            _error("ISSUE_NOT_OPEN")
+        bounty_id = len(self.bounties)
+        self.bounties.append(Bounty(u64(bounty_id), gl.message.sender_address, repo, u64(issue_number),
+                                   issue["title"], issue["body"], _canonical(clean), u8(min_score),
+                                   u256(gl.message.value), u64(deadline), u64(now), "OPEN", Address(ZERO_ADDRESS), i64(-1)))
+        self.total_escrowed += u256(gl.message.value)
+        return bounty_id
 
     @gl.public.view
     def get_config(self) -> dict:

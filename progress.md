@@ -56,3 +56,9 @@ M0 verification complete within available environment. M1 begins next; unresolve
 - `python scripts/check.py check contracts/issue_bounty_escrow.py --json`: lint and SDK semantic validation pass (11 views). `pytest tests/direct tests/experiments -q`: recorded below.
 - Workspace `.git` is mounted read-only (`index.lock: Read-only file system`). To honor frequent commits, separate durable git metadata is `/home/box/.genlayer/issue-bounty-git`, with worktree unchanged at `/workspace/genlayer-issue-bounty`. Use `GIT_DIR=/home/box/.genlayer/issue-bounty-git GIT_WORK_TREE=/workspace/genlayer-issue-bounty` for git/gh commands. No permission escalation needed.
 - M1 initial suite exposed cache-dependent SDK cleanup in gltest 0.29.2: the cache path must include `gltest-direct`. Fixed the cache path without changing SDK behavior. Final M1 suite: 13 passed (12 direct + 1 probe).
+
+### M2 — 2026-10-12
+
+- ND-1 verifies an exact gist marker and implements latest-proof identity migration in both directions. ND-2 freezes bounded normalized issue fields, validates all inputs before any HTTP call, and stores payable reward.
+- `python scripts/check.py check contracts/issue_bounty_escrow.py --json`: pass, 13 public methods.
+- `pytest tests/direct -q`: **36 passed**. T-B1–B6 and T-C1–C6 covered, including HTTP failures, identity migration, reward 0/123, snapshot bounds, invalid arguments and exact deadline boundary.
