@@ -8,6 +8,10 @@
       [
         "max_claims_per_claimant",
         "int"
+      ],
+      [
+        "treasury",
+        "string"
       ]
     ],
     "kwparams": {}
@@ -50,6 +54,19 @@
         [
           "min_score",
           "int"
+        ],
+        [
+          "trusted_merger_ids",
+          {
+            "$or": [
+              [
+                {
+                  "$rep": "int"
+                }
+              ],
+              "null"
+            ]
+          }
         ]
       ],
       "kwparams": {},
@@ -231,6 +248,13 @@
           "int"
         ]
       ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "int",
+      "payable": false
+    },
+    "sweep_surplus": {
+      "params": [],
       "kwparams": {},
       "readonly": false,
       "ret": "int",

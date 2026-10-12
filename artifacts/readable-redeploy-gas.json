@@ -1,21 +1,22 @@
 {
   "code_path": "/workspace/genlayer-issue-bounty/artifacts/issue_bounty_escrow.zip",
-  "code_bytes": 9784,
-  "code_sha256": "41924553f895b1b3a7750c3211020597c60a47b6913ec0b868a37d052fb02e46",
+  "code_bytes": 11122,
+  "code_sha256": "a8e13eaca72e07e73d7868ca8cfc1bf2d69c1d011d5eead9da7878f7802223c8",
   "chain_id": 4221,
   "rpc": "https://rpc-bradbury.genlayer.com",
   "method": "eth_estimateGas",
   "consensus": "0x0112Bf6e83497965A5fdD6Dad1E447a6E004271D",
   "constructor_args": [
     259200,
-    3
+    3,
+    "0x8f374a83965b2143bea962a48c8dacaf0db62d16"
   ],
   "initial_validators": 5,
   "max_rotations": 3,
-  "transaction_data_bytes": 10052,
-  "gas_estimate": 8627504,
+  "transaction_data_bytes": 11428,
+  "gas_estimate": 9674026,
   "target_gas": 15500000,
   "meets_target": true,
-  "checked_at": "2026-10-12T18:11:20.135Z",
+  "checked_at": "2026-10-12T18:53:30.820Z",
   "transactions_sent": 0
 }

@@ -29,7 +29,7 @@ function rpc(method, params) {
 
 if (Number(BigInt(rpc('eth_chainId', []))) !== 4221) throw new Error('Bradbury chain required');
 const source = readFileSync(sourcePath);
-const constructorArgs = [259200, 3];
+const constructorArgs = [259200, 3, sender];
 const payload = abi.transactions.serialize([
   source, abi.calldata.encode(abi.calldata.makeCalldataObject(undefined, constructorArgs)), false,
 ]);
@@ -49,6 +49,7 @@ console.log(JSON.stringify({
   initial_validators: chain.defaultNumberOfInitialValidators,
   max_rotations: chain.defaultConsensusMaxRotations,
   transaction_data_bytes: (transactionData.length - 2) / 2, gas_estimate: gas,
-  target_gas: 15500000, meets_target: gas <= 15500000,
+  target_gas: 15500000, meets_target: gas < 15500000,
   checked_at: new Date().toISOString(), transactions_sent: 0,
 }, null, 2));
+if (gas >= 15500000) process.exitCode = 1;

@@ -111,9 +111,10 @@ def test_concurrent_demo_uses_creation_receipt_and_repairs_stale_id(monkeypatch,
     monkeypatch.setattr(module.sys,'argv',['demo_flow.py','--fees-file','unused.json'])
     address='0x'+'1'*40
     monkeypatch.setattr(module,'preflight',lambda:(address,10**15))
-    manifest={'address':'0x'+'2'*40,'demo_bounty_id':4,'demo_deadline':123,
+    manifest={'package_contract':'0x'+'2'*40,'package_sha256':'0'*64,'demo_bounty_id':4,'demo_deadline':123,
               'demo_txs':[{'step':'bind','tx_hash':'bind-tx'},{'step':'create','tx_hash':'create-tx'}]}
     monkeypatch.setattr(module,'load_manifest',lambda:manifest)
+    monkeypatch.setattr(module,'verify_onchain_code',lambda contract,digest:None)
     monkeypatch.setattr(module,'save_manifest',lambda data:None)
     monkeypatch.setattr(module,'confirmed',lambda client,tx:receipt_for_bounty(7) if tx=='create-tx' else {})
     reads=[]

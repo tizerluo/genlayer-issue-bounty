@@ -4,8 +4,10 @@ import sys
 from datetime import datetime,timezone
 if __package__:
     from .network_common import *
+    from .verify_onchain_code import verify_onchain_code
 else:
     from network_common import *
+    from verify_onchain_code import verify_onchain_code
 
 def main():
     parser=argparse.ArgumentParser()
@@ -18,11 +20,12 @@ def main():
         raise RuntimeError('Demo reward must be positive and at most 0.001 test GEN')
     address,balance=preflight()
     manifest=load_manifest()
-    contract=manifest.get('address')
+    contract=manifest.get('package_contract')
     if not contract or balance==0:
         print('BLOCKER: funded dedicated deployer and verified Bradbury deployment required')
         return 2
     sandbox=json.loads((ROOT/'deployments/sandbox.json').read_text())
+    verify_onchain_code(contract,manifest['package_sha256'])
     client=client_with_signer()
     if int(client.read_contract(contract,'get_config')['claim_grace_seconds'])!=259200:
         raise RuntimeError('Unexpected contract configuration')

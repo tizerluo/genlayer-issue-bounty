@@ -164,21 +164,24 @@ def test_new_award_cannot_shorten_existing_credit_hold(ready,direct_vm):
         ready.withdraw()
     conserved(ready,579)
 
-def test_synchronous_emit_error_rolls_back_credit(ready,direct_vm):
+def test_synchronous_emit_error_propagates(ready,direct_vm):
     from genlayer import gl
     pr(direct_vm)
     verdict(direct_vm)
     ready.submit_claim(0,34)
     direct_vm.warp('2026-10-19T00:00:00Z')
+    requests=[]
     def fail(vm,request):
+        requests.append(request)
         if 'EthSend' in request:
             raise gl.vm.UserError('EMIT_FAILED')
         return {'ok':None}
     direct_vm._gl_call_hook=fail
     with direct_vm.expect_revert('EMIT_FAILED'):
         ready.withdraw()
-    assert ready.get_credit(direct_vm.sender.as_hex)==123
-    conserved(ready,123)
+    # Direct mode does not roll back storage on exceptions. Verify propagation and
+    # absence of a success event; actual transaction rollback belongs to the host.
+    assert not any('EmitEvent' in request for request in requests)
 
 def test_accounting_detects_simulated_stranded_transfer(ready,direct_vm):
     # 异步子转账失败不执行合约恢复分支；独立余额断言必须暴露账本差异。
@@ -192,3 +195,66 @@ def test_accounting_detects_simulated_stranded_transfer(ready,direct_vm):
     assert ready.get_credit(direct_vm.sender.as_hex)==0
     with pytest.raises(AssertionError):
         conserved(ready,123)
+
+
+def test_sweep_preserves_open_escrow_and_refund_credit(ready, direct_vm):
+    from genlayer import Address
+    from conftest import TREASURY
+    create(direct_vm, ready, value=456)
+    direct_vm.warp('2026-10-15T02:00:01Z')
+    ready.refund(1)
+    direct_vm.deal(direct_vm._contract_address, 579 + 77)
+    direct_vm.sender = Address(TREASURY)
+    requests=[]
+    transfer_model=direct_vm._gl_call_hook
+    def capture(vm, request):
+        requests.append(request)
+        return transfer_model(vm, request)
+    direct_vm._gl_call_hook=capture
+    assert ready.sweep_surplus() == 77
+    sends=[request['EthSend'] for request in requests if 'EthSend' in request]
+    assert len(sends) == 1 and sends[0]['address'] == Address(TREASURY)
+    assert sends[0]['value'] == 77
+    accounting=ready.get_accounting()
+    assert accounting['contract_balance'] == 579
+    assert accounting['total_escrowed'] == 123 and accounting['total_credits'] == 456
+    assert accounting['total_swept'] == 77 and accounting['total_withdrawn'] == 0
+    with direct_vm.expect_revert('NO_SURPLUS'):
+        ready.sweep_surplus()
+
+
+def test_sweep_only_fixed_treasury(ready, direct_vm):
+    direct_vm.deal(direct_vm._contract_address, 124)
+    with direct_vm.expect_revert('NOT_TREASURY'):
+        ready.sweep_surplus()
+    assert ready.get_accounting()['contract_balance'] == 124
+
+
+def test_failed_child_surplus_can_be_swept_without_recreating_credit(ready, direct_vm):
+    from genlayer import Address
+    from conftest import TREASURY
+    pr(direct_vm)
+    verdict(direct_vm)
+    ready.submit_claim(0, 34)
+    direct_vm.warp('2026-10-19T00:00:00Z')
+    claimant=direct_vm.sender
+    ready.withdraw()
+    # Simulate failed deferred delivery leaving the original native funds behind.
+    direct_vm.deal(direct_vm._contract_address, 123)
+    create(direct_vm, ready, value=456, deadline=NOW+8*86400)
+    direct_vm.sender=Address(TREASURY)
+    assert ready.sweep_surplus() == 123
+    assert ready.get_credit(claimant.as_hex) == 0
+    accounting=ready.get_accounting()
+    assert accounting['contract_balance'] == accounting['total_escrowed'] == 456
+    assert accounting['total_swept'] == 123
+
+
+def test_sweep_refuses_balance_below_liabilities(ready, direct_vm):
+    from genlayer import Address
+    from conftest import TREASURY
+    direct_vm.sender=Address(TREASURY)
+    direct_vm.deal(direct_vm._contract_address, 122)
+    with direct_vm.expect_revert('NO_SURPLUS'):
+        ready.sweep_surplus()
+    assert ready.get_accounting()['total_escrowed'] == 123

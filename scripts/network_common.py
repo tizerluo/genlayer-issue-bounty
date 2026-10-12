@@ -10,6 +10,8 @@ EXPLORER='https://explorer-bradbury.genlayer.com'
 KEYSTORE=Path('/home/box/.genlayer/keystores/issue-bounty-deployer.json')
 PASSWORD=Path('/home/box/.genlayer/deployer.pass')
 MANIFEST=ROOT/'deployments/bradbury.json'
+TREASURY='0x8f374a83965b2143bea962a48c8dacaf0db62d16'
+CONSTRUCTOR_ARGS=[259200,3,TREASURY]
 
 def rpc(method,params):
     # 当前 RPC 拒绝默认 Python requests UA；curl 的公开 RPC 请求已实测通过。
@@ -45,6 +47,11 @@ def client_with_signer():
     from genlayer_py import create_client
     from genlayer_py.chains import testnet_bradbury
     return create_client(chain=testnet_bradbury,endpoint=RPC,account=signer())
+
+def client_read_only():
+    from genlayer_py import create_client
+    from genlayer_py.chains import testnet_bradbury
+    return create_client(chain=testnet_bradbury, endpoint=RPC)
 
 def load_manifest():
     return json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}

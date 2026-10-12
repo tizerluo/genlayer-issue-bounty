@@ -266,3 +266,52 @@ Findings 1–7, 9–13 RESOLVED; #8 PARTIAL (no recovery path for failed async t
   task. Source, package, verification tools, README and these notes are committed
   and pushed to `main`; there are no workflow changes in the commit.
 - **No transactions sent. No keys decrypted or secrets printed. No deployment.**
+
+## Review round 3
+
+2026-10-12: fixed Cursor Agent (`claude-opus-5-5-high`) findings in
+`logs/review3.md`. This section supersedes prior claims about deployment identity,
+reference formatting, transfer recovery, constructor/ABI compatibility and
+byte-identical package reproducibility. The ZIP is a **fresh deployment candidate**;
+no transaction was sent in this round.
+
+| Finding | Change | Tests / evidence |
+| --- | --- | --- |
+| #1 HIGH: deployment/source mismatch | Separate `package_deploy_tx`, `package_contract`, `package_sha256`. Deploy verbatim artifact bytes, verify the artifact hash and restored source, reject resumed transaction code mismatches before signer access, and require raw RPC code SHA-256 before recording success. Both SDK-decoded code and raw deployment RLP are supported. New read-only `scripts/verify_onchain_code.py` and one-command README recipe. Historical address/transaction/demo moved under `legacy_deployment`, explicitly **legacy minified deployment (superseded)**. | `test_legacy_transaction_is_not_resumed_and_exact_artifact_is_sent`, `test_resume_different_transaction_code_refused_before_signing`, `test_resume_artifact_change_refused_before_rpc`, `test_matching_resume_uses_no_signer_or_fees`, `test_wrong_onchain_code_never_recorded_as_deployed`, binary RPC/RLP tests. `artifacts/onchain-code-check.json` records a real read-only fetch of legacy code and the correctly rejected hash mismatch. The ZIP has no on-chain address; future deployment verification remains mandatory. |
+| #2 MEDIUM: honest merge formats rejected | Affirmative standalone lines allow `*`/`-` prefixes, CRLF and comma-separated references, with exact repository/issue matching. Fallback accepts paginated issue `closed` events only when `commit_id` equals the verified merge SHA. Editable PR title/body remain excluded. | `test_references` includes each honest format; `test_merge_commit_without_pr_body_accepts_closed_event`, `test_closed_event_requires_exact_merge_commit`, `test_closed_event_pagination`; expanded negative reference cases preserve negation, wrong-number and wrong-repo rejection. |
+| #3 MEDIUM: independent merger trust | Optional `trusted_merger_ids` on `create_bounty`; unique positive u64 IDs stored and exposed on the bounty. A nonempty list requires membership in addition to independence. Omitted/null/empty accepts any independent merger and README documents the repository-maintainer/collusion/bot trust assumption. | `test_trusted_merger_gate` covers allowed, unlisted, empty and self-merged cases; `test_invalid_trusted_mergers` covers bad IDs/types/duplicates; `test_trusted_mergers_snapshot` covers defaults and stored values. |
+| #4 MEDIUM: dead transfer recovery | Remove local try/except restoration; document synchronous host rollback and deferred child failure. Constructor-fixed nonzero treasury, treasury-only `sweep_surplus()`, bounded by `balance - (total_escrowed + total_credits)`. Constructor args updated in deployment, gas estimator, runtime probe, integration fixture and README. `total_swept` records requests. | `test_synchronous_emit_error_propagates`; sweep tests protect simultaneous open escrow/refund credits, reject other callers/no surplus/deficit, and model recovery of a failed child's surplus without recreating claimant credit. Invalid treasury/self-address checks. **Live protocol validation remains unverified:** seven days is not a measured appeal window; failing-child and appeal experiments were not performed because the owner explicitly prohibited transactions. |
+| #5 LOW: zlib byte comparisons | Verify stored entries, entry set/CRC, runner semantics, exact loader template and decompressed source, rather than comparing a new compressed build to the artifact. The exact deployment ZIP hash stays separately pinned. Direct package tests and Wasm verifier use this semantic check. | `test_semantic_verification_accepts_alternative_zlib_bytes`; substitutions of runner/loader/source and outer compressed entries are rejected. |
+| #6 LOW: Unicode/diff escaping | Strip U+2028/U+2029 along with controls; escape `<` only when it could open a prompt delimiter (including spaced closing tags), preserving comparisons/generic openings. | Expanded `test_prompt_injection_stays_encoded_data`, `test_prompt_preserves_comparisons_and_generics`; existing hostile tag cases still pass. |
+| #7 LOW: leader summary display | Strip HTTP(S) URLs and controls during normalization and again at persistence, including a forged leader result. README requires HTML escaping by any future frontend; summaries never affect payment equivalence. | `test_summary_urls_removed_even_from_leader_result` verifies stored text, bypassing normalization to exercise the persistence guard. |
+| #8 LOW: oversized diffs | Diff HTTP 406 is `[EXTERNAL] DIFF_TOO_LARGE`, without claim/count mutations. README explicitly documents the first-12,000-character bound and permanent no-resampling after a completed truncated judgment. | `test_diff_406_is_permanent_external_error`; existing `test_truncated_and_escaped` and duplicate-diff tests. Full oversized downloads and judgments beyond the bound remain limitations. |
+| #9 LOW: repository dot segments | Reject `.` / `..` repository names and case-insensitive `.git` suffixes before GitHub access. | Expanded `test_invalid_inputs`. |
+| #10 LOW: readability | Named prompt placeholders, criterion/met variable names, clearer claim captures, comments for immutable evidence/diff anchoring/liability conservation/async transfer semantics, and Recipient docstring. | Source/package regression suite, SDK lint/semantic checks and typecheck. README includes read-only on-chain verification. |
+| #11 LOW: package CI and probe scope | Add a separate `ISSUE_BOUNTY_TEST_PACKAGE=1` job to **docs/ci.yml** only. Runtime evidence records which checks execute exact shipped bytes, and separately records the modified callback probe hash. | Both local test modes; exact ZIP constructor/schema run in pinned GenVM v0.2.12, plus nondeterministic/sandbox loader probes in the explicitly modified temporary package. `.github/workflows/ci.yml` is not edited/staged/pushed by this task because the token lacks workflow scope. |
+
+Validation and candidate identity:
+
+- Source: **38,410 bytes**, SHA-256
+  `e06d0d0c58ca166c1543040b0326e564bd962368f10333116e58630a1032060b`.
+- Package: `artifacts/issue_bounty_escrow.zip`, **11,122 bytes**, SHA-256
+  `a8e13eaca72e07e73d7868ca8cfc1bf2d69c1d011d5eead9da7878f7802223c8`.
+- Exact constructor arguments:
+  `[259200, 3, "0x8f374a83965b2143bea962a48c8dacaf0db62d16"]`.
+- Bradbury estimate-only `eth_estimateGas`: **9,674,026**, below **15,500,000**.
+  `artifacts/readable-redeploy-gas.json` records the exact package hash,
+  constructor, calldata size, chain 4221 and zero transactions sent.
+- Normal/source and shipped-loader suites: **214 passed, 11 skipped** per mode.
+  Skips require Studio/live opt-ins and are not live validation. The direct
+  harness does not roll back storage on exceptions; the synchronous emission
+  test proves error propagation and no success event, not native host rollback.
+- Official lint and SDK semantic validation pass: **21 methods**, **14 views**,
+  **7 writes**, **3 constructor parameters**. Typecheck reports no type errors.
+  Regenerated ABI; pinned GenVM executes the exact ZIP constructor and schema.
+- Read-only legacy RPC code: **17,831 bytes**, SHA-256
+  `730f0f8a2abe596be3db4cff0efe09d925d8a0a0e352a6b78e12e4c90ecf87e5`.
+  It differs from the candidate ZIP as expected. No package deployment or
+  claimant transfer delivery is claimed.
+- No transactions sent, no keys decrypted, no secrets printed. Source,
+  artifacts, tests, documentation and tooling are committed/pushed through
+  `GIT_DIR=/home/box/.genlayer/issue-bounty-git`, after `git pull --rebase` in a
+  temporary clean tree that preserves the preexisting local workflow change.

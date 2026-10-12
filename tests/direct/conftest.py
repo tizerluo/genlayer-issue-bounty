@@ -3,6 +3,7 @@ import pytest
 
 NOW = 1791763200
 CONTRACT = 'contracts/issue_bounty_escrow.py'
+TREASURY = '0x' + '8' * 40
 
 @pytest.fixture(autouse=True)
 def strict_vm(direct_vm):
@@ -12,7 +13,7 @@ def strict_vm(direct_vm):
 
 @pytest.fixture
 def escrow(direct_deploy, direct_vm):
-    contract = direct_deploy(CONTRACT, 259200, 3)
+    contract = direct_deploy(CONTRACT, 259200, 3, TREASURY)
     from genlayer import Address
     direct_vm.sender = Address(direct_vm.sender)
     return contract

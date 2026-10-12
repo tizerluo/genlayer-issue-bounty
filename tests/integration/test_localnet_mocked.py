@@ -4,7 +4,7 @@ import pytest
 from gltest import get_contract_factory, get_validator_factory, get_default_account
 from gltest.assertions import tx_execution_succeeded
 from gltest.types import TransactionStatus
-from tests.helpers import NOW, REPO, USER_URL, GISTS_URL, ISSUE_URL, PR_URL, DIFF_URL, DIFF, COMMIT_URL, MERGE_SHA
+from tests.helpers import NOW, REPO, USER_URL, GISTS_URL, ISSUE_URL, PR_URL, DIFF_URL, DIFF, COMMIT_URL, MERGE_SHA, EVENTS_URL
 
 pytestmark = pytest.mark.integration
 
@@ -23,6 +23,7 @@ def context(account, merged=True, met=(True,True), count=5, contract_address='0x
                   'merged_by':{'id':99},'merge_commit_sha':MERGE_SHA,
                   'base':{'ref':'main','repo':{'full_name':REPO,'default_branch':'main'}},'title':'Add','body':'Fixes #12'},
           COMMIT_URL:{'sha':MERGE_SHA,'commit':{'message':commit_message}},
+          EVENTS_URL:[],
           DIFF_URL:DIFF}
     web={u:{'method':'GET','response':{'status':200,'headers':{},'body':v if isinstance(v,str) else json.dumps(v)}} for u,v in data.items()}
     answer={'criteria':[{'id':i+1,'met':m} for i,m in enumerate(met)],'score':9,'summary':'Mock judge'}
@@ -32,7 +33,7 @@ def context(account, merged=True, met=(True,True), count=5, contract_address='0x
     return {'validators':[v.to_dict() for v in validators],'genvm_datetime':'2026-10-12T00:00:00Z'}
 
 def deploy(ctx):
-    return get_contract_factory(contract_file_path='contracts/issue_bounty_escrow.py').deploy(args=[259200,3],transaction_context=ctx)
+    return get_contract_factory(contract_file_path='contracts/issue_bounty_escrow.py').deploy(args=[259200,3,get_default_account().address],transaction_context=ctx)
 
 def setup_bounty(c,ctx,merged=True):
     ctx.update(context(get_default_account(),contract_address=c.address,merged=merged))

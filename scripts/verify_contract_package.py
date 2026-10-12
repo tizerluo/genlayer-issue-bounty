@@ -12,9 +12,11 @@ from genlayer_py.abi import calldata
 from genlayer_py.abi.calldata.encoder import CalldataAddress
 
 if __package__:
-    from .build_contract_package import OUTPUT, ROOT, SOURCE, build_package
+    from .build_contract_package import OUTPUT, ROOT, SOURCE, build_package, verify_package
+    from .network_common import CONSTRUCTOR_ARGS
 else:
-    from build_contract_package import OUTPUT, ROOT, SOURCE, build_package
+    from build_contract_package import OUTPUT, ROOT, SOURCE, build_package, verify_package
+    from network_common import CONSTRUCTOR_ARGS
 
 
 def execute_package(runtime_root: Path, code: bytes, invocation: dict, initializing: bool) -> dict:
@@ -124,9 +126,8 @@ def main():
     args = parser.parse_args()
     runtime_root = args.genvm_root.resolve()
     package = OUTPUT.read_bytes()
-    if package != build_package():
-        raise RuntimeError('Rebuild the package from the current readable source')
-    constructor = execute_package(runtime_root, package, {'args': [259200, 3]}, True)
+    verify_package(package)
+    constructor = execute_package(runtime_root, package, {'args': CONSTRUCTOR_ARGS}, True)
     assert constructor['data'] is None
     schema = execute_package(runtime_root, package, {'method': '#get-schema'}, False)
     assert json.loads(schema['data']) == json.loads((ROOT / 'artifacts/abi.json').read_text())
@@ -144,7 +145,9 @@ def main():
         sandbox = gl.vm.spawn_sandbox(rerun).calldata
         return {"leader":leader, "sandbox":sandbox}
 ''')
-        callback = execute_package(runtime_root, build_package(probe_path),
+        probe_package = build_package(probe_path)
+        probe_hash = hashlib.sha256(probe_package).hexdigest()
+        callback = execute_package(runtime_root, probe_package,
                                    {'method': 'verify_package_callbacks'}, False)['data']
         expected = {'criteria_met': [True], 'score': 7, 'summary': ''}
         assert callback == {'leader': expected, 'sandbox': expected}
@@ -152,6 +155,10 @@ def main():
         'runtime': 'GenVM v0.2.12 / pinned CPython Wasm',
         'package_sha256': hashlib.sha256(package).hexdigest(),
         'constructor': 'RETURN null', 'sdk_schema_matches_abi': True,
+        'constructor_args': CONSTRUCTOR_ARGS,
+        'shipped_package_checks': ['constructor', 'schema'],
+        'callback_probe_package_sha256': probe_hash,
+        'callback_probe_uses_modified_package': True,
         'nondeterministic_child_loader': 'passed', 'sandbox_child_loader': 'passed',
         'abi_methods': len(json.loads(schema['data'])['methods']),
         'scope': 'local executor with an in-memory host; no live provider or Bradbury execution',

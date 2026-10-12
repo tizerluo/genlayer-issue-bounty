@@ -1,8 +1,8 @@
 # Contract source and deployment notes
 
 `contracts/issue_bounty_escrow.py` is the readable review source. The redeploy
-candidate is `artifacts/issue_bounty_escrow.zip`, built reproducibly from those
-exact UTF-8 bytes. Its manifest records both SHA-256 hashes and byte counts.
+candidate is `artifacts/issue_bounty_escrow.zip`, built from those exact UTF-8 bytes. Semantic checks support different zlib
+implementations; the deployment manifest separately pins the exact shipped ZIP hash. Its manifest records both SHA-256 hashes and byte counts.
 This is a fresh-deployment candidate; renamed storage fields do not migrate the
 existing minified deployment.
 
@@ -52,7 +52,9 @@ The standard SDK runner discovers the same `IssueBountyEscrow` class. Sandbox
 and nondeterministic replay can import the same `contract` module again. The
 loader reads only its mapped local file; it fetches no code from the network.
 All bytes, including the loader and the checksum, are stored in the same
-immutable deployment input. ZIP entry compression and Python decompression
+immutable deployment input. That bundled checksum only detects corruption; it
+does not prove what a deployer sent. The external manifest and read-only RPC
+code hash verification establish the link to the reviewed artifact. ZIP entry compression and Python decompression
 are different stages: GenVM parses stored entries, then CPython reads the inner
 payload after startup.
 
@@ -62,33 +64,44 @@ The linter/typechecker validate the restored readable contract; the actual
 GenVM probe validates the separate loader and package execution path.
 
 Raw `.py` upload still exceeds the cap. Use the package bytes for redeployment.
-`scripts/deploy_bradbury.py` builds those bytes from the current readable file
-before its existing deployment flow. Do not pass the ZIP through a CLI path
+`scripts/deploy_bradbury.py` reads `artifacts/issue_bounty_escrow.zip` verbatim,
+checks its recorded hash and source semantics, checks resumed transaction code,
+and hashes `gen_getContractCode` bytes after deployment before recording success.
+Legacy deployment fields are never used for package resumption. Do not pass the ZIP through a CLI path
 that decodes it as UTF-8 text. Source/explorer tools that assume UTF-8 contract
 code need to extract `source.zlib`; the readable repository file and manifest
 provide the review source directly. Portal acceptance of a binary deployment
 was not tested and no portal submission was made.
 
-## Preserved behavior
+## Review round 3 behavior
 
-This restores the reviewed implementation from `9cda109`, retaining the
-already deployed `BOUNTY_JUDGE_V2` prompt byte for byte. Only internal identifier
-names, formatting, public docstrings, and prompt storage as a named constant
-change. The ABI, constructor parameters, return keys, errors, six events,
-conditions, state mutation order, and all review-round-1 security fixes remain.
+This is a fresh deployment with constructor `(claim_grace_seconds,
+max_claims_per_claimant, treasury)`. The recorded candidate uses
+`[259200, 3, "0x8f374a83965b2143bea962a48c8dacaf0db62d16"]`. The ABI now
+has 21 methods (14 views, 7 writes), including `sweep_surplus`; six events remain.
 
-- HTTP errors never disclose response bodies; 404 and transient errors remain distinct.
-- Identity proof requires the gist owner, contract, caller, and per-GitHub-id nonce.
+- Identity proof requires the gist owner, contract, caller and per-GitHub-id nonce.
   Migration preserves numeric-id attempt limits and invalidates old proofs.
-- Eligibility uses immutable merge commits, affirmative issue-closing lines,
-  the default branch, an independent merger, the author and the merge window.
+- Eligibility uses affirmative merge-commit lines (bullets, CRLF, comma lists)
+  or issue closure events tied to the same merge SHA, the default branch,
+  an independent merger, the author and the creation-to-deadline merge window.
+  A sponsor's optional trusted merger list adds a membership check; empty
+  means trusting any independent repository merger ID.
 - The raw diff hash anchors independent leader/validator fetches and judgments.
   Threshold disagreement cannot be excused by score tolerance.
-- Prompt text retains control-character filtering, tag escaping, JSON encoding,
-  conservative missing-evidence handling, and sponsor-target boundaries.
-- Withdrawal still clears credit before emission, preserves the seven-day hold,
-  and restores accounting on synchronous emission failure. Deferred child
-  failure and live appeal/rollback behavior remain unverified.
+- Named prompt placeholders preserve sponsor-target boundaries and JSON data
+  encoding. Controls and Unicode line/paragraph separators are filtered;
+  potentially forged delimiter openings are escaped while code `<` survives.
+  Summaries strip HTTP(S) URLs and still require frontend HTML escaping.
+- Withdrawal clears credit before emission and preserves the seven-day hold.
+  Synchronous errors propagate for whole-transaction rollback by the host;
+  deferred child errors cannot be caught in the contract. The fixed treasury
+  can sweep only positive native surplus above escrow plus outstanding credits.
+  Sweeping does not recreate claimant credit or prove delivery. Confirm failed
+  child receipts before treasury reconciliation or another sweep request.
+- HTTP 406 for a diff is `[EXTERNAL] DIFF_TOO_LARGE`. The 12,000-character
+  judgment bound still applies; completed judgments cannot be resampled.
+  Repository dot segments and `.git` suffixes are rejected.
 
 ## Reproduce the candidate
 
@@ -112,14 +125,15 @@ For actual Wasm verification, extract the official v0.2.12
 .network-venv/bin/python scripts/verify_contract_package.py --genvm-root /path/to/runtime
 ```
 
-The probe checks construction, the exact SDK schema, and source loading in real
-nondeterministic and sandbox child VMs. Its temporary callback probe is not in
+The probe executes the exact shipped ZIP for construction and SDK schema.
+It separately checks source loading in real nondeterministic and sandbox child VMs
+using a modified temporary package with an added test method. Its temporary callback probe is not in
 the deployment package or public ABI. The local host stores no chain state and
 uses no live provider. [Runtime evidence](../artifacts/package-runtime-validation.json)
-records the actual shipped package hash.
+records both shipped and modified probe hashes, and which checks use each.
 
 See the package manifest, gas evidence, runtime probe evidence, and
-[Readable redeploy candidate](../progress.md#readable-redeploy-candidate) for
+[Review round 3](../progress.md#review-round-3) for
 exact counts and checks. For preserved security rationale and remaining live
 limitations, see [review round 1](../progress.md#review-round-1),
 [consensus](CONSENSUS.md), and [threat model](THREAT_MODEL.md).

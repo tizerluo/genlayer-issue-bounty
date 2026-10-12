@@ -2,31 +2,41 @@
   "chain_id": 4221,
   "rpc": "https://rpc-bradbury.genlayer.com",
   "deployer": "0x8f374a83965b2143bea962a48c8dacaf0db62d16",
-  "checked_at": "2026-10-12T16:17:07.828414+00:00",
+  "status": "package_not_deployed",
+  "package_deploy_tx": null,
+  "package_contract": null,
+  "package_sha256": "a8e13eaca72e07e73d7868ca8cfc1bf2d69c1d011d5eead9da7878f7802223c8",
+  "package_path": "artifacts/issue_bounty_escrow.zip",
+  "constructor_args": [
+    259200,
+    3,
+    "0x8f374a83965b2143bea962a48c8dacaf0db62d16"
+  ],
+  "onchain_code_verified": false,
   "address": null,
   "explorer_url": null,
   "demo_txs": [],
-  "status": "deployed",
-  "blockers": [
-    "Official faucet requires GitHub sign-in and Turnstile; deployer balance is zero",
-    "FeeManager quoteGasPrice reverted with RC tooling; current fee profile unverified"
-  ],
-  "contract": "0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE",
-  "explorer": "https://explorer-bradbury.genlayer.com/address/0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE",
-  "deploy_tx": "0xc0599aca42eccf1c2808635b6e164169a425daf86464396a6fb092b5dba2d3a4",
-  "constructor_args": [
-    259200,
-    3
-  ],
-  "demo_bounty": {
-    "id": 0,
-    "create_tx": "0xcbb71f1a1919202b69f0e8fb6af8b2328e25493f0828f90d269f5d75c1143efb",
-    "repo": "tizerluo/bounty-sandbox",
-    "issue": 1,
-    "reward_wei": 100000000000000,
-    "min_score": 7,
-    "status": "OPEN",
-    "result": "FINISHED_WITH_RETURN"
-  },
-  "deployed_at": "2026-10-12"
+  "blockers": [],
+  "note": "ZIP candidate not deployed. Legacy records are historical and must never be resumed as the package deployment.",
+  "legacy_deployment": {
+    "contract": "0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE",
+    "explorer": "https://explorer-bradbury.genlayer.com/address/0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE",
+    "deploy_tx": "0xc0599aca42eccf1c2808635b6e164169a425daf86464396a6fb092b5dba2d3a4",
+    "constructor_args": [
+      259200,
+      3
+    ],
+    "demo_bounty": {
+      "id": 0,
+      "create_tx": "0xcbb71f1a1919202b69f0e8fb6af8b2328e25493f0828f90d269f5d75c1143efb",
+      "repo": "tizerluo/bounty-sandbox",
+      "issue": 1,
+      "reward_wei": 100000000000000,
+      "min_score": 7,
+      "status": "OPEN",
+      "result": "FINISHED_WITH_RETURN"
+    },
+    "deployed_at": "2026-10-12",
+    "status": "legacy minified deployment (superseded)"
+  }
 }

@@ -56,6 +56,26 @@ def build_package(source_path: Path = SOURCE) -> bytes:
     return output.getvalue()
 
 
+def verify_package(package: bytes, source_path: Path = SOURCE) -> None:
+    """Check package semantics without depending on a particular zlib compressor."""
+    source = source_path.read_bytes()
+    expected = package_entries(source)
+    with zipfile.ZipFile(io.BytesIO(package)) as archive:
+        entries = archive.infolist()
+        if len(entries) != len(expected) or set(archive.namelist()) != set(expected):
+            raise RuntimeError('Unexpected package entries')
+        if any(entry.compress_type != zipfile.ZIP_STORED for entry in entries):
+            raise RuntimeError('GenVM requires stored ZIP entries')
+        if archive.testzip() is not None:
+            raise RuntimeError('Package CRC mismatch')
+        if json.loads(archive.read('runner.json')) != json.loads(expected['runner.json']):
+            raise RuntimeError('Package runner mismatch')
+        if archive.read('file') != expected['file']:
+            raise RuntimeError('Package loader mismatch')
+        if zlib.decompress(archive.read('source.zlib')) != source:
+            raise RuntimeError('Package source mismatch')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, default=SOURCE)

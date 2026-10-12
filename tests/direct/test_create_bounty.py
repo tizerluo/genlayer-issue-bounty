@@ -16,6 +16,8 @@ def test_create(escrow, direct_vm, value):
     ('deadline',NOW+3599,'INVALID_DEADLINE'),('deadline',NOW+180*86400+1,'INVALID_DEADLINE'),
     ('min_score',0,'INVALID_MIN_SCORE'),('min_score',11,'INVALID_MIN_SCORE'),
     ('repo','bad/../../x','INVALID_REPO'),('issue_number',0,'INVALID_ISSUE_NUMBER'),
+    ('repo','owner/.','INVALID_REPO'),('repo','owner/..','INVALID_REPO'),
+    ('repo','owner/project.GIT','INVALID_REPO'),
     ('issue_number',2**64,'INVALID_ISSUE_NUMBER')])
 def test_invalid_inputs(escrow, direct_vm, field, value, code):
     args = dict(repo=REPO,issue_number=12,criteria=['x'],deadline=NOW+7200,min_score=7)
@@ -35,3 +37,15 @@ def test_snapshot(escrow,direct_vm):
     b=escrow.get_bounty(0)
     assert len(b['issue_title']) == 200 and len(b['issue_snapshot']) == 2000
     assert b['criteria'] == ['x'] and b['repo'] == REPO
+
+
+@pytest.mark.parametrize('trusted', [[0], [-1], [True], ['99'], [2**64], [99, 99], '99'])
+def test_invalid_trusted_mergers(escrow, direct_vm, trusted):
+    with direct_vm.expect_revert('INVALID_TRUSTED_MERGERS'):
+        escrow.create_bounty(REPO, 12, ['x'], NOW+7200, 7, trusted)
+
+
+@pytest.mark.parametrize('trusted', [None, [], [99, 100]])
+def test_trusted_mergers_snapshot(escrow, direct_vm, trusted):
+    create(direct_vm, escrow, trusted_merger_ids=trusted)
+    assert escrow.get_bounty(0)['trusted_merger_ids'] == (trusted or [])

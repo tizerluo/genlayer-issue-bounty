@@ -1,11 +1,22 @@
 {
   "runtime": "GenVM v0.2.12 / pinned CPython Wasm",
-  "package_sha256": "41924553f895b1b3a7750c3211020597c60a47b6913ec0b868a37d052fb02e46",
+  "package_sha256": "a8e13eaca72e07e73d7868ca8cfc1bf2d69c1d011d5eead9da7878f7802223c8",
   "constructor": "RETURN null",
   "sdk_schema_matches_abi": true,
+  "constructor_args": [
+    259200,
+    3,
+    "0x8f374a83965b2143bea962a48c8dacaf0db62d16"
+  ],
+  "shipped_package_checks": [
+    "constructor",
+    "schema"
+  ],
+  "callback_probe_package_sha256": "240e76732927adc55ac29613acdcc203d733b62a06059b1aa8d7cf4881f6aba5",
+  "callback_probe_uses_modified_package": true,
   "nondeterministic_child_loader": "passed",
   "sandbox_child_loader": "passed",
-  "abi_methods": 20,
+  "abi_methods": 21,
   "scope": "local executor with an in-memory host; no live provider or Bradbury execution",
   "transactions_sent": 0
 }

@@ -17,6 +17,7 @@ PR_URL = f'https://api.github.com/repos/{REPO}/pulls/34'
 DIFF_URL = f'https://patch-diff.githubusercontent.com/raw/{REPO}/pull/34.diff'
 MERGE_SHA = 'a' * 40
 COMMIT_URL = f'https://api.github.com/repos/{REPO}/commits/{MERGE_SHA}'
+EVENTS_URL = f'https://api.github.com/repos/{REPO}/issues/12/events?per_page=100&page=1'
 DIFF = (FIXTURES/'pr_merged.diff').read_text()
 
 def web(vm, url, obj, status=200):
@@ -55,13 +56,18 @@ def create(vm, c, value=0, **changes):
     finally:
         vm.value = 0
 
-def pr(vm, commit_message='Add addition\n\nFixes #12', diff_text=DIFF, **changes):
+def pr(vm, commit_message='Add addition\n\nFixes #12', diff_text=DIFF, events=None, **changes):
     obj = fixture('pr_merged.json')
     obj.update(changes)
     web(vm, PR_URL, obj)
     if obj.get('merged'):
         sha = obj.get('merge_commit_sha', MERGE_SHA)
         web(vm, f'https://api.github.com/repos/{REPO}/commits/{sha}', {'sha': sha, 'commit': {'message': commit_message}})
+        # Only register events for the fallback path; strict mocks require each URL be used.
+        from importlib import import_module
+        module = import_module('_contract_issue_bounty_escrow')
+        if not module._references_issue(commit_message, REPO, 12):
+            web(vm, EVENTS_URL, [] if events is None else events)
         if diff_text is not None:
             web(vm, DIFF_URL, diff_text)
 

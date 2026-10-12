@@ -6,7 +6,7 @@ The contract makes settlement decisions in two stages. GitHub facts are determin
 | --- | --- | --- | --- |
 | ND-1a/1b binding | user consensus, then public gist list after capturing storage nonce | numeric id/login; matching owner and exact contract/wallet/nonce marker | two canonical JSON strict-equality calls |
 | ND-2 creation | issue metadata | existence, issue kind, state, bounded title/body snapshot | canonical JSON strict equality |
-| ND-3 claim facts | PR + immutable merge commit + diff | author/merger ids, base repo/ref/default branch, merge time/SHA, commit reference, diff SHA-256/length | canonical JSON strict equality |
+| ND-3 claim facts | PR + immutable merge commit + optional paginated issue events + diff | author/merger ids, base repo/ref/default branch, merge time/SHA, commit reference or SHA-matched closed event, diff SHA-256/length | canonical JSON strict equality |
 | ND-4 judge | same diff + LLM | criterion booleans, score, summary, SHA-256 | independent rerun with explicit comparison |
 
 The ND-4 validator validates the leader schema, independently reads the diff, verifies its hash against ND-3, and calls the LLM. ACCEPT/REJECT must match exactly. Scores may differ by at most 2. When both reject, criterion booleans may differ at at most one position. ACCEPT implies every criterion is true on both sides. Summary wording is ignored. A score difference across the minimum threshold always causes disagreement even if within tolerance.
@@ -28,3 +28,5 @@ Studio I-1–I-4 are implemented but blocked: Docker binary/socket absent and lo
 Review round 1: **147 direct/unit/probe tests pass**, with negative attacks mapped in progress.md. Lint, SDK semantic validation and typecheck pass for 20 methods. **11 Studio/live cases skip** because local Studio is unavailable, including the new I-4 immutable-reference disagreement case. Real smoke now uses six distinct bounties created before fresh independent PR merges. Unchanged rejected diffs cannot be judged twice within a bounty.
 
 T-N9–T-N12 and other callback replays use a custom same-process `spawn_sandbox` adapter. Its exception conversion and isolation are not equivalent to GenVM. The negative validator VM-error test proves callback rejection only. Native GenVM behavior and real multi-validator disagreement still require the Studio suites. No live measurements have been added by this round.
+
+Review round 3 adds optional trusted merger IDs captured as plain values for the deterministic gate, honest closing-line formats, and SHA-matched issue closure evidence. Summary URLs are stripped even from the accepted leader result; summaries remain outside payment equivalence and must be escaped by a frontend. Updated validation is recorded in progress.md.

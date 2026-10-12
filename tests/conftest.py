@@ -15,8 +15,8 @@ def direct_deploy(direct_deploy, tmp_path):
     def deploy(contract_path, *args, **kwargs):
         kwargs.setdefault('sdk_version', 'v0.2.12')
         if os.environ.get('ISSUE_BOUNTY_TEST_PACKAGE') == '1' and Path(contract_path).name == 'issue_bounty_escrow.py':
-            from scripts.build_contract_package import OUTPUT, PAYLOAD_PATH, build_package
-            assert OUTPUT.read_bytes() == build_package(), 'Rebuild the deployment package before testing'
+            from scripts.build_contract_package import OUTPUT, PAYLOAD_PATH, verify_package
+            verify_package(OUTPUT.read_bytes())
             with zipfile.ZipFile(OUTPUT) as archive:
                 payload_path = tmp_path / 'source.zlib'
                 payload_path.write_bytes(archive.read('source.zlib'))
