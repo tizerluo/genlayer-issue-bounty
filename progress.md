@@ -76,3 +76,14 @@ M0 verification complete within available environment. M1 begins next; unresolve
 - Direct payout tests inspect the actual SDK `EthSend` request (recipient, 123 wei, empty calldata) and assert credit is already zero and withdrawn total updated at emission. Event requests are observed through the harness hook.
 - `python scripts/check.py check contracts/issue_bounty_escrow.py --json`: pass, 16 public methods. `pytest tests/direct -q`: **86 passed**. Accounting sequence conserves 579 wei through rejection/award/refund/withdraw.
 - Item 6 verified at SDK/lint/direct request level; Bradbury event receipt still blocked. Direct mode does not move native balances or execute emitted transfers. `total_withdrawn` measures requested transfers; confirmed EOA delivery remains a finalization check.
+
+### M5 — 2026-10-12
+
+- Added manual Studio tests I-1 payment flow, I-2 fact rejection, I-3 refund, I-4 split committee, plus complete/partial real LLM smoke repeated three times. Results require both accepted/finalized status and successful execution; a negative-case timeout is not counted as success.
+- `command -v docker`, Docker socket paths: absent. `curl --max-time 3 http://127.0.0.1:4000/api`: connection refused. Studio cannot start in this environment; no Docker daemon installed or privileged escalation attempted.
+- `ISSUE_BOUNTY_STUDIO_TESTS=1 .venv/bin/gltest tests/integration -v --network localnet`: **10 skipped**, with explicit missing-Studio prerequisite. Real smoke also lacks OPENROUTER_API_KEY. This is blocked execution, not a passed M5.
+- Removed unbound private-key interpolation from shared gltest config: 0.29.2 eagerly resolves all networks and otherwise blocks even direct/local tests. Deployment scripts will decrypt only the dedicated keystore in memory.
+- `docs/CONSENSUS.md` records mocked consensus observations and explicitly leaves live-model distributions unmeasured.
+- Item 14: official Studio Providers docs (https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/providers) specify Settings → Inference Providers → New Config → provider/model/plugin/default validator config. CLI 0.39.2 `init --help` provides `--headless --numValidators --localnet-version`, but no OpenRouter key flag. Verify exact OpenRouter plugin fields from Studio source in M6; do not write secrets into repo/env.
+
+M5 attempted; runtime and real LLM validation remain blocked. Proceeding to M6 independent deliverables.
