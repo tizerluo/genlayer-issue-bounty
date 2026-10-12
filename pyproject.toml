@@ -1,0 +1,7 @@
+[tool.pytest.ini_options]
+testpaths = ["tests/direct"]
+filterwarnings = ["error::RuntimeWarning"]
+markers = [
+  "integration: requires a running Studio localnet",
+  "live: requires explicit real-provider opt-in",
+]
