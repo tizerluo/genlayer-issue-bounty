@@ -1,0 +1,2 @@
+# 单独环境，避免 gltest 0.29.2 对旧版 SDK 的依赖约束。
+genlayer-py==0.19.0rc2

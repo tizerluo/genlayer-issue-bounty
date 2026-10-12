@@ -1,0 +1,14 @@
+{
+  "chain_id": 4221,
+  "rpc": "https://rpc-bradbury.genlayer.com",
+  "deployer": "0x8f374a83965b2143bea962a48c8dacaf0db62d16",
+  "checked_at": "2026-10-12T16:17:07.828414+00:00",
+  "address": null,
+  "explorer_url": null,
+  "demo_txs": [],
+  "status": "blocked",
+  "blockers": [
+    "Official faucet requires GitHub sign-in and Turnstile; deployer balance is zero",
+    "FeeManager quoteGasPrice reverted with RC tooling; current fee profile unverified"
+  ]
+}

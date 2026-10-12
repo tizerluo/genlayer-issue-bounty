@@ -1,0 +1,10 @@
+{
+  "checked_at": "2026-10-12",
+  "chain_id": 4221,
+  "fee_manager_from_rc_cli": "0xF205868bf5db79d2162843742D18D0900A9E462a",
+  "runtime_code_bytes": 1159,
+  "GENPerTimeUnit()": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "storageUnitPrice()": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "quoteGasPrice()": "RPC eth_call returned an error/revert",
+  "messageFeeParamsBudgetFloor()": "RPC eth_call returned an error/revert"
+}

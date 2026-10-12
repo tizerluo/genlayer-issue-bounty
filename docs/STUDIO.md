@@ -1,0 +1,13 @@
+# Local Studio / OpenRouter
+
+Verification date: 2026-10-12. Docker and a local Studio service were unavailable in the implementation container. These setup instructions follow official source; actual integration remains unverified.
+
+1. On a Docker-capable machine, install the GenLayer CLI and initialize a local Studio (`genlayer init --headless --numValidators 5`, then `genlayer up`). Use a compatible CLI/Studio release family: stable testing uses gltest 0.29.2; Consensus v0.6 needs matching RC tooling and fee profiles. Do not silently mix those versions.
+2. Open http://localhost:8080 → Settings → Inference Providers → New Config. Official Studio ships provider `openrouter`, plugin `openai-compatible`, and plugin config `{"api_key_env_var":"OPENROUTERAPIKEY","api_url":"https://openrouter.ai/api"}`. Choose a supported model and create validators using that provider.
+3. Make the owner's `OPENROUTER_API_KEY` available to the Studio backend as `OPENROUTERAPIKEY` in the backend/container process environment. The two names are different. Preserve it only in process memory or an outside-repository secret file managed by the owner; do not modify the repository `.env`, print the value, or put it into contract source. Provider defaults alone do not supply the key to a container.
+4. Run mocked integration with `ISSUE_BOUNTY_STUDIO_TESTS=1 gltest tests/integration/test_localnet_mocked.py -v -s --network localnet`.
+5. For real smoke, create a gist proof for the actual local caller wallet. Set public fixture selectors `BOUNTY_ISSUE_NUMBER`, `BOUNTY_COMPLETE_PR`, `BOUNTY_PARTIAL_PR` from deployments/sandbox.json. Run `ISSUE_BOUNTY_STUDIO_TESTS=1 ISSUE_BOUNTY_LIVE_SMOKE=1 gltest tests/integration/test_live_smoke.py -v -s --network localnet`. The key must be present in the runner environment as well so the prerequisite check can detect it.
+
+The complete and partial PRs run three times each in fresh contract instances. Record consensus status, per-node scores and diff hash in CONSENSUS.md. GitHub requests from a shared IP are limited, so spread out real smoke runs or capture public web data with mocks while testing a real model.
+
+Sources: [Studio Providers](https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/providers), [official OpenRouter config](https://github.com/genlayerlabs/genlayer-studio/blob/main/backend/node/create_nodes/default_providers/openrouter_deepseekdeepseek-v3.2.json), [official environment template](https://github.com/genlayerlabs/genlayer-studio/blob/main/.env.example), [v0.6 migration](https://docs.genlayer.com/developers/consensus-v06-migration).

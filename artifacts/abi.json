@@ -1,0 +1,210 @@
+{
+  "ctor": {
+    "params": [
+      [
+        "claim_grace_seconds",
+        "int"
+      ],
+      [
+        "max_claims_per_claimant",
+        "int"
+      ]
+    ],
+    "kwparams": {}
+  },
+  "methods": {
+    "bind_github": {
+      "params": [
+        [
+          "github_login",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "create_bounty": {
+      "params": [
+        [
+          "repo",
+          "string"
+        ],
+        [
+          "issue_number",
+          "int"
+        ],
+        [
+          "criteria",
+          [
+            {
+              "$rep": "string"
+            }
+          ]
+        ],
+        [
+          "deadline",
+          "int"
+        ],
+        [
+          "min_score",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "int",
+      "payable": true
+    },
+    "get_accounting": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_bounties": {
+      "params": [
+        [
+          "offset",
+          "int"
+        ],
+        [
+          "limit",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "array"
+    },
+    "get_bounty": {
+      "params": [
+        [
+          "bounty_id",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_bounty_count": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_claim": {
+      "params": [
+        [
+          "claim_id",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_claim_count": {
+      "params": [
+        [
+          "bounty_id",
+          "int"
+        ],
+        [
+          "wallet",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_claims_for_bounty": {
+      "params": [
+        [
+          "bounty_id",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "array"
+    },
+    "get_config": {
+      "params": [],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_credit": {
+      "params": [
+        [
+          "wallet",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_github_binding": {
+      "params": [
+        [
+          "wallet",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "dict"
+    },
+    "get_wallet_for_github_id": {
+      "params": [
+        [
+          "github_id",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "string"
+    },
+    "refund": {
+      "params": [
+        [
+          "bounty_id",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "submit_claim": {
+      "params": [
+        [
+          "bounty_id",
+          "int"
+        ],
+        [
+          "pr_number",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "int",
+      "payable": false
+    },
+    "withdraw": {
+      "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    }
+  }
+}
