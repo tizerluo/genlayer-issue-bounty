@@ -8,7 +8,7 @@ This audit records completion without changing the owner's approved PRD.
 - [x] Bounded/escaped prompts, numeric GitHub identity, custom User-Agent and conservative normalization.
 - [x] Terminal state transitions, creator refund authorization, zero-before-send withdrawal and accounting sequence assertions.
 - [x] Six SDK-supported events; Chinese code/test comments; English README.
-- [x] Official lint, semantic validation and typecheck pass; 92 direct/unit/probe tests pass.
+- [x] Official lint, semantic validation and typecheck pass; 94 direct/unit/probe tests pass.
 - [x] Public sandbox issue, complete and partial merged PRs, deployer gist, sanitized provenance-backed fixtures and ABI delivered.
 - [x] Strong dedicated encrypted CLI keystore outside repo, mode-0600 password, no old key variables read, testnet guards.
 - [x] Public source committed frequently and pushed; architecture, consensus, threat model, usage, deployment scripts and final report included.

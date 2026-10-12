@@ -5,8 +5,16 @@
 .env.*
 !.env.example
 *.key
+*.pk
 *.pem
+*.p12
+*.pfx
+*.keystore
 *.pass
+*.env
+keys/
+secrets/
+wallet.json
 *keystore*
 *keypair*
 *private_key*

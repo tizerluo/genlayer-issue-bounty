@@ -6,6 +6,8 @@ from tests.helpers import pr, verdict, web, DIFF_URL, DIFF
 @pytest.mark.parametrize('leader_met,leader_score,mine_met,mine_score,agree',[
     ((True,True),9,(True,True),9,True),
     ((True,True),9,(True,True),8,True),
+    ((True,True),9,(True,True),7,True),
+    ((True,True),7,(True,True),6,False),
     ((True,True),9,(True,True),6,False),
     ((True,True),9,(True,False),9,False),
     ((False,False),5,(False,True),5,True),

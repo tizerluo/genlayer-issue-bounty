@@ -65,7 +65,7 @@ python scripts/check.py check contracts/issue_bounty_escrow.py --json
 pytest tests/direct tests/experiments -v -W error::RuntimeWarning
 ```
 
-The cache wrapper runs the official GenVM linter/semantic validator under `/tmp`. It does not suppress rules. Tests use the pinned actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **92 passed** (91 direct/unit + 1 M0 SDK probe). The prepared GitHub Actions workflow runs these checks with Python 3.12 and needs no secrets. **CI publication is blocked:** the CLI token lacks `workflow` scope, and the connected app's write requires approval while this environment's approval policy is `never`. CI has not run.
+The cache wrapper runs the official GenVM linter/semantic validator under `/tmp`. It does not suppress rules. Tests use the pinned actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **94 passed** (93 direct/unit + 1 M0 SDK probe). The prepared GitHub Actions workflow runs these checks with Python 3.12 and needs no secrets. **CI publication is blocked:** the CLI token lacks `workflow` scope, and the connected app's write requires approval while this environment's approval policy is `never`. CI has not run.
 
 On an owner-controlled machine, grant the CLI workflow permission (`gh auth refresh -h github.com -s workflow`), copy `docs/ci.yml` to `.github/workflows/ci.yml`, then commit/push and verify the run is green. The implementation workspace already contains the ready workflow file and retains a local `ci-ready` branch.
 

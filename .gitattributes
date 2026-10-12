@@ -1,0 +1,2 @@
+# 原始 unified diff 的空上下文行含一个空格；保留字节以验证 SHA-256。
+tests/fixtures/*.diff -whitespace

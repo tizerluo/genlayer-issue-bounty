@@ -10,7 +10,7 @@ Date: 2026-10-12. Testnet only. No builder portal submission.
 | Bradbury contract explorer URL | **Unavailable until deployment**; expected `https://explorer-bradbury.genlayer.com/address/<verified contract address>` |
 | Demo bounty id / transaction hash | **None — funded network demo blocked** |
 | Dedicated public deployer | `0x8f374a83965b2143bea962a48c8dacaf0db62d16`; zero test GEN |
-| Direct/unit/probe tests | **92 passed** |
+| Direct/unit/probe tests | **94 passed** |
 | Lint / SDK validation | **Passed**; 16 public methods, six events |
 | Pyright | **Passed — no type errors** |
 | Studio / real LLM | **10 skipped**, prerequisite blockers below |
