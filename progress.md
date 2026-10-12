@@ -49,3 +49,9 @@ Never inspect `OLD_WALLET_*_PK`. No mainnet or real-money actions. New encrypted
 - Commands: `.venv/bin/pytest tests/experiments -q`: **1 passed**. `python scripts/check.py` changes only cache paths under `/tmp`, because HOME is read-only; it runs the official linter.
 
 M0 verification complete within available environment. M1 begins next; unresolved live checks remain explicitly listed.
+
+### M1 — 2026-10-12
+
+- Implemented typed storage/dataclasses, constructor, all 11 read methods, criteria validation, conservative schema normalization and shared deterministic decision function.
+- `python scripts/check.py check contracts/issue_bounty_escrow.py --json`: lint and SDK semantic validation pass (11 views). `pytest tests/direct tests/experiments -q`: recorded below.
+- Workspace `.git` is mounted read-only (`index.lock: Read-only file system`). To honor frequent commits, separate durable git metadata is `/home/box/.genlayer/issue-bounty-git`, with worktree unchanged at `/workspace/genlayer-issue-bounty`. Use `GIT_DIR=/home/box/.genlayer/issue-bounty-git GIT_WORK_TREE=/workspace/genlayer-issue-bounty` for git/gh commands. No permission escalation needed.
