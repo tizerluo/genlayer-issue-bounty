@@ -319,3 +319,8 @@ Validation and candidate identity:
 ## Readable package redeploy (2026-10-12 ~15:25 ET)
 - Deployed exact bytes of artifacts/issue_bounty_escrow.zip (sha256 a8e13eac…23c8) via genlayer-js: contract 0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48, tx 0xe0499895930368ed845a02117a283b0c889481808337b4882673baf4d545038f, FINISHED_WITH_RETURN. scripts/verify_onchain_code.py: verified=true.
 - Demo bounty #0 recreated: tx 0xa877c23575b9a4723dac6b625d9bf7035ae98d84e1e21acce92b8d429395c863, status OPEN.
+
+## Live E2E prep (2026-10-12 ~15:50 ET)
+- 6tizer (id 260656772) invited to tizerluo/bounty-sandbox with write (push) permission; invitation pending acceptance.
+- Binding gist https://gist.github.com/tizerluo/b3fdc25fb2891ffff0e91c74ff391e84 (marker genlayer-bounty-bind:0x33bec323…bc48:0x8f374a83…2d16:0); bind_github("tizerluo") tx 0x365b3f1e3f41e00decddef8fcfb907e432329fae81c61e46eb1c85bcc6afc690 FINISHED_WITH_RETURN; bind nonce now 1.
+- Claim PR https://github.com/tizerluo/bounty-sandbox/pull/4 ("Fixes #1"), not merged. Bounty #0 trusted_merger_ids = [] (any independent merger, so 6tizer qualifies).
