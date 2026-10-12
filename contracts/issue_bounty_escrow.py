@@ -294,6 +294,34 @@ class Claim:
     created_at: u64
 
 
+# SDK 的非 indexed 字段必须通过 **blob 传递。
+class GithubBound(gl.Event):
+    def __init__(self, wallet: Address, /, **blob): ...
+
+class BountyCreated(gl.Event):
+    def __init__(self, bounty_id: int, creator: Address, /, **blob): ...
+
+class ClaimEvaluated(gl.Event):
+    def __init__(self, bounty_id: int, claimant: Address, /, **blob): ...
+
+class BountyAwarded(gl.Event):
+    def __init__(self, bounty_id: int, winner: Address, /, **blob): ...
+
+class BountyRefunded(gl.Event):
+    def __init__(self, bounty_id: int, /, **blob): ...
+
+class Withdrawn(gl.Event):
+    def __init__(self, wallet: Address, /, **blob): ...
+
+@gl.evm.contract_interface
+class _Recipient:
+    # 空接口只发出 EOA 转账消息，实际执行发生在最终确定时。
+    class View:
+        pass
+    class Write:
+        pass
+
+
 class IssueBountyEscrow(gl.Contract):
     claim_grace_seconds: u64
     max_claims_per_claimant: u8
@@ -359,6 +387,7 @@ class IssueBountyEscrow(gl.Contract):
         self.wallet_to_github_id[sender] = github_id
         self.wallet_to_github_login[sender] = binding["login"]
         self.github_id_to_wallet[str(github_id)] = sender
+        GithubBound(sender, github_id=int(github_id), login=binding["login"]).emit()
 
     @gl.public.write.payable
     def create_bounty(self, repo: str, issue_number: int, criteria: list[str], deadline: int, min_score: int) -> int:
@@ -394,6 +423,8 @@ class IssueBountyEscrow(gl.Contract):
                                    issue["title"], issue["body"], _canonical(clean), u8(min_score),
                                    u256(gl.message.value), u64(deadline), u64(now), "OPEN", Address(ZERO_ADDRESS), i64(-1)))
         self.total_escrowed += u256(gl.message.value)
+        BountyCreated(bounty_id, gl.message.sender_address, repo=repo, issue_number=issue_number,
+                      reward=int(gl.message.value), deadline=deadline).emit()
         return bounty_id
 
     @gl.public.write
@@ -472,13 +503,46 @@ class IssueBountyEscrow(gl.Contract):
             self.claim_ids_by_bounty[index_key] = []
         self.claim_ids_by_bounty[index_key].append(u64(claim_id))
         self.claim_count_by_key[count_key] = u8(count + 1)
+        ClaimEvaluated(bounty_id, sender, claim_id=claim_id, status="ACCEPTED" if accepted else "REJECTED",
+                       reason=reason, score=verdict["score"]).emit()
         if accepted:
             b.status, b.winner, b.winning_claim_id = "AWARDED", sender, i64(claim_id)
             reward = b.reward
             self.total_escrowed -= reward
             self.credits[sender] = self.credits.get(sender, u256(0)) + reward
             self.total_credits += reward
+            BountyAwarded(bounty_id, sender, claim_id=claim_id, reward=int(reward)).emit()
         return claim_id
+
+    @gl.public.write
+    def refund(self, bounty_id: int) -> None:
+        b = self._bounty(bounty_id)
+        sender = gl.message.sender_address
+        if b.creator != sender:
+            _error("NOT_CREATOR")
+        if b.status != "OPEN":
+            _error("BOUNTY_NOT_OPEN")
+        if _now() <= int(b.deadline) + int(self.claim_grace_seconds):
+            _error("REFUND_TOO_EARLY")
+        reward = b.reward
+        b.status = "REFUNDED"
+        self.total_escrowed -= reward
+        self.credits[sender] = self.credits.get(sender, u256(0)) + reward
+        self.total_credits += reward
+        BountyRefunded(bounty_id, amount=int(reward)).emit()
+
+    @gl.public.write
+    def withdraw(self) -> None:
+        sender = gl.message.sender_address
+        amount = self.credits.get(sender, u256(0))
+        if amount == 0:
+            _error("NOTHING_TO_WITHDRAW")
+        # 先清零和更新账本，再发消息，避免重复提取。
+        self.credits[sender] = u256(0)
+        self.total_credits -= amount
+        self.total_withdrawn += amount
+        _Recipient(sender).emit_transfer(value=amount)
+        Withdrawn(sender, amount=int(amount)).emit()
 
     @gl.public.view
     def get_config(self) -> dict:

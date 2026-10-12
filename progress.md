@@ -67,5 +67,12 @@ M0 verification complete within available environment. M1 begins next; unresolve
 
 - Implemented ND-3 ordered fact gate and ND-4 independent LLM judge/validator. Diff SHA-256 is over the raw bytes both times. All captures are plain values; strict pickling checks are enabled. Missing/truncated evidence is conservative, closing tags escaped, schema rejects duplicate ids, boolean scores and ambiguous results.
 - Objective failures produce REJECTED claims without LLM use. Transient/schema failures occur before any claim/counter/accounting mutation.
-- `python scripts/check.py check contracts/issue_bounty_escrow.py --json`: pass (14 methods). `pytest tests/direct -q`: **81 passed**.
+- `python scripts/check.py check contracts/issue_bounty_escrow.py --json`: pass (14 methods). `pytest tests/direct -q`: **80 passed**.
 - T-N1–N14 exercised, including forged ACCEPT, threshold disagreement, score tolerance, reject Hamming tolerance, changed diff, transient/external/LLM error voting and strict_eq disagreement. Error replay uses an Exception with the exact wire message because native `run_validator(leader_error=UserError(...))` wraps its repr instead of `.message` in 0.29.2.
+
+### M4 — 2026-10-12
+
+- Implemented creator-only refund strictly after deadline + grace, single-use credit withdrawal, and six events using supported `**blob` constructors.
+- Direct payout tests inspect the actual SDK `EthSend` request (recipient, 123 wei, empty calldata) and assert credit is already zero and withdrawn total updated at emission. Event requests are observed through the harness hook.
+- `python scripts/check.py check contracts/issue_bounty_escrow.py --json`: pass, 16 public methods. `pytest tests/direct -q`: **86 passed**. Accounting sequence conserves 579 wei through rejection/award/refund/withdraw.
+- Item 6 verified at SDK/lint/direct request level; Bradbury event receipt still blocked. Direct mode does not move native balances or execute emitted transfers. `total_withdrawn` measures requested transfers; confirmed EOA delivery remains a finalization check.
