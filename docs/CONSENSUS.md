@@ -19,6 +19,8 @@ Business/external errors agree only if independently reproduced with the same me
 
 M3 direct tests: 80 passed; M4: 86 passed. The consensus matrix covers T-N1–N14: identical decisions, score tolerance, threshold crossings, criterion disagreements, reject Hamming bounds, hash mismatch, transient/LLM error votes, malformed and forged leader results, and strict fact disagreement. These are mocked callback measurements; there are no real-model score distributions yet.
 
+Final M6 local suite: **92 passed**, including five deployment safety guards and the SDK probe's exact User-Agent wire assertion. Actual public sandbox diff is used with recorded SHA-256; account/repo/time fields are normalized for fixed direct-mode transaction time. GitHub Actions publication was blocked by unavailable workflow permission, so this result is local execution.
+
 gltest 0.29.2's native Sandbox replay is incomplete. A test-only adapter executes the original sandbox callback and returns its SDK result. It does not provide VM isolation. Strict mocks and callback pickling checks remain enabled; the contract and its validator are not patched. Direct mode does not simulate committee finality, native transfers, or protocol fees.
 
 Studio I-1–I-4 are implemented but blocked: Docker binary/socket absent and localhost:4000 unavailable. Real OpenRouter smoke (complete and partial PR, 3 runs each) is blocked because OPENROUTER_API_KEY is absent. No consensus rate or live result is claimed. Run the manual commands in README after providing those prerequisites; append actual receipts, outcomes and per-node scores here.

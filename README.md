@@ -1,6 +1,6 @@
 # IssueBountyEscrow
 
-[![CI](https://github.com/tizerluo/genlayer-issue-bounty/actions/workflows/ci.yml/badge.svg)](https://github.com/tizerluo/genlayer-issue-bounty/actions/workflows/ci.yml)
+[Prepared GitHub Actions workflow](docs/ci.yml) · [Final report](FINAL_REPORT.md)
 
 GitHub issue bounties escrowed and judged by GenLayer intelligent-contract consensus. Sponsors define acceptance criteria; developers prove GitHub identity, submit merged PRs, and withdraw rewards after independent AI review.
 
@@ -65,7 +65,9 @@ python scripts/check.py check contracts/issue_bounty_escrow.py --json
 pytest tests/direct tests/experiments -v -W error::RuntimeWarning
 ```
 
-The cache wrapper runs the official GenVM linter/semantic validator under `/tmp`. It does not suppress rules. Tests use the pinned actual SDK, strict mocks, fixed transaction time and closure pickling checks. Current result: **92 passed** (91 direct/unit + 1 M0 SDK probe). GitHub Actions runs these checks with Python 3.12 and needs no secrets.
+The cache wrapper runs the official GenVM linter/semantic validator under `/tmp`. It does not suppress rules. Tests use the pinned actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **92 passed** (91 direct/unit + 1 M0 SDK probe). The prepared GitHub Actions workflow runs these checks with Python 3.12 and needs no secrets. **CI publication is blocked:** the CLI token lacks `workflow` scope, and the connected app's write requires approval while this environment's approval policy is `never`. CI has not run.
+
+On an owner-controlled machine, grant the CLI workflow permission (`gh auth refresh -h github.com -s workflow`), copy `docs/ci.yml` to `.github/workflows/ci.yml`, then commit/push and verify the run is green. The implementation workspace already contains the ready workflow file and retains a local `ci-ready` branch.
 
 gltest 0.29.2 has incomplete Sandbox replay; a test-only adapter executes the original callback for strict_eq validation. It does not simulate VM isolation or committee finality. Direct tests observe external transfer requests; actual native balances require network verification. The mocked committee and real LLM suites were **10 skipped** due to absent Studio; OpenRouter is also unavailable. See [Studio/OpenRouter setup](docs/STUDIO.md) to run them.
 

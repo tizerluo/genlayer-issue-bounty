@@ -1,0 +1,14 @@
+{
+  "merged": true,
+  "merged_at": "2026-10-12T01:00:00Z",
+  "user": {
+    "id": 42
+  },
+  "base": {
+    "repo": {
+      "full_name": "owner/project"
+    }
+  },
+  "title": "Complete fixture: addition plus usage examples",
+  "body": "Fixes #12"
+}

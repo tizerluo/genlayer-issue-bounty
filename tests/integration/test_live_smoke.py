@@ -16,7 +16,7 @@ def test_real_judge(case,run):
     # 每次使用新实例，避免前次 AWARDED 状态影响重复测量。
     repo=os.environ.get('BOUNTY_SANDBOX_REPO','tizerluo/bounty-sandbox')
     login=os.environ.get('BOUNTY_GITHUB_LOGIN','tizerluo')
-    issue=int(os.environ.get('BOUNTY_ISSUE_NUMBER','2'))
+    issue=int(os.environ.get('BOUNTY_ISSUE_NUMBER','1'))
     pr=int(os.environ['BOUNTY_COMPLETE_PR' if case == 'complete' else 'BOUNTY_PARTIAL_PR'])
     from datetime import datetime,timezone
     deadline=int(datetime.now(timezone.utc).timestamp())+7200

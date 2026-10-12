@@ -1,0 +1,5 @@
+{
+  "state": "open",
+  "title": "Implement and document integer addition (escrow evidence fixture)",
+  "body": "Acceptance criteria for the IssueBountyEscrow testnet demo:\n1. Implement integer addition in Python.\n2. Document addition with an executable usage example.\n\nOne merged PR deliberately implements only criterion 1; another implements both. The issue will be reopened after fixture merges so a live bounty can snapshot it. Testnet demonstration only.\n"
+}

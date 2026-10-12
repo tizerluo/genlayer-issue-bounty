@@ -1,0 +1,13 @@
+{
+  "repo": "tizerluo/bounty-sandbox",
+  "url": "https://github.com/tizerluo/bounty-sandbox",
+  "issue_number": 1,
+  "issue_url": "https://github.com/tizerluo/bounty-sandbox/issues/1",
+  "partial_pr": 2,
+  "partial_pr_url": "https://github.com/tizerluo/bounty-sandbox/pull/2",
+  "complete_pr": 3,
+  "complete_pr_url": "https://github.com/tizerluo/bounty-sandbox/pull/3",
+  "deployer_gist": "https://gist.github.com/tizerluo/e6b1878333f2612ef1a822edbd1590b1",
+  "checked_at": "2026-10-12",
+  "note": "Both PRs merged; issue reopened for create_bounty snapshot. Gist proves dedicated Bradbury deployer, not a local Studio default account."
+}

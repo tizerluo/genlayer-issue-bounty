@@ -1,0 +1,27 @@
+diff --git a/README.md b/README.md
+index d39085e..5925560 100644
+--- a/README.md
++++ b/README.md
+@@ -1,3 +1,13 @@
+ # IssueBountyEscrow public evidence sandbox
+ 
+ Small merged pull requests for the GenLayer IssueBountyEscrow complete/partial acceptance smoke tests. No credentials or real funds. See tizerluo/genlayer-issue-bounty.
++
++## Integer addition
++
++Use `addition.add` to return the sum of two integers:
++
++```python
++from addition import add
++assert add(2, 3) == 5
++assert add(-2, 3) == 1
++```
+diff --git a/addition.py b/addition.py
+new file mode 100644
+index 0000000..0ea4b97
+--- /dev/null
++++ b/addition.py
+@@ -0,0 +1,3 @@
++# 完整实现样本：整数相加并附带可运行的使用示例。
++def add(a: int, b: int) -> int:
++    return a + b

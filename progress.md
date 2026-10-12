@@ -6,8 +6,13 @@ Owner approved `docs-PRD.md` on 2026-10-12. The explicit session decisions overr
 
 | Milestone | Status | Evidence |
 | --- | --- | --- |
-| M0 | In progress | Toolchain and SDK verification |
-| M1–M6 | Pending | Execute in order |
+| M0 | Complete within available environment | Pinned SDK, probe, tools and section 11 register |
+| M1 | Complete | Skeleton/views; lint and direct tests |
+| M2 | Complete | GitHub binding and payable creation tests |
+| M3 | Complete | Claims, independent judge, T-N1–N14 |
+| M4 | Complete | Refund/withdraw/events and accounting tests |
+| M5 | Attempted; blocked | 10 Studio/live cases skipped, no Docker/Studio/key |
+| M6 | Partial delivery; blocked live steps | Public source and evidence published; CI permission, faucet and fee policy unresolved |
 
 ## Session evidence — 2026-10-12
 
@@ -22,9 +27,20 @@ Owner approved `docs-PRD.md` on 2026-10-12. The explicit session decisions overr
 
 | Item | Finding | Evidence / next action |
 | --- | --- | --- |
-| 1 | Owner to verify at submission | Portal form must confirm group AND / member OR. No submission performed. |
-| 2 | Owner to verify at submission | Exact meaning of escalation threshold requires portal confirmation. |
-| 3–14 | Pending | Toolchain, direct experiments, official source, network checks |
+| 1 | owner to verify at submission | Portal form must confirm group AND / member OR. No submission performed. |
+| 2 | owner to verify at submission | Exact meaning of escalation threshold requires portal confirmation. |
+| 3 | Partially verified; fees/version unresolved | Bradbury chain 4221 confirmed by network info and eth_chainId. Stable estimator missing; RC quoteGasPrice reverts. RPC probe: FeeManager code 1159 bytes, GENPerTimeUnit/storageUnitPrice both zero; this does not establish gasless deployment or protocol version. artifacts/network-probe.json. |
+| 4 | Verified official source + SDK | PRD Depends hash still in official boilerplate; pinned GenVM v0.2.12 probe passes lint/validation. |
+| 5 | Verified SDK/direct | Response.status is the actual field; compatibility fallback status_code retained. |
+| 6 | Verified lint/direct emission | gl.Event supported; non-indexed fields require **blob. Six events pass lint/typecheck and emitted request inspection. Live receipt remains unverified. |
+| 7 | Partially verified | list[str] roundtrips through actual calldata in direct mode and ABI. CLI help supports JSON arrays; live CLI/GenVM decoding remains blocked. |
+| 8 | Verified with documented harness limits | direct_vm.value carries payable value. Native strict_eq Sandbox replay is incomplete; test-only original-callback adapter verifies positive/negative votes. |
+| 9 | Host verified; GenVM/quota unverified | Sandbox PR 3 .diff returns 302 to patch-diff; final URL 200 text/plain. SHA-256 matches captured fixture. GenVM redirect following and API quota exemption remain unverified; final URL avoids redirects. |
+| 10 | SDK wire verified; live header receipt unverified | M0 probe intercepts WebRequest and asserts User-Agent bytes. SDK serializes custom headers. |
+| 11 | Verified | gltest 0.29.2 built-in testnet_bradbury appears at startup; RPC and chain also in SDK. |
+| 12 | Unverified on Bradbury | SDK EthSend transfer request, zero-before-send and accounting verified directly. RC fee estimation currently incompatible; messageAllocations and failed-child behavior require network test. No automatic restoration exists in this contract. |
+| 13 | Verified CLI help | Stable 0.39.2 and RC 0.40.0-rc.3 write expose fee-value but no bounty value option; Python SDK has value. |
+| 14 | Verified official configuration; execution blocked | Settings → Inference Providers; openrouter/openai-compatible plugin, api_key_env_var OPENROUTERAPIKEY, api_url https://openrouter.ai/api. Bridge owner OPENROUTER_API_KEY into backend process environment; key absent and Studio unavailable. docs/STUDIO.md. |
 | 15 | Not applicable | Statuspage candidate C was not selected. |
 
 ## Safety constraints
@@ -87,3 +103,18 @@ M0 verification complete within available environment. M1 begins next; unresolve
 - Item 14: official Studio Providers docs (https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/providers) specify Settings → Inference Providers → New Config → provider/model/plugin/default validator config. CLI 0.39.2 `init --help` provides `--headless --numValidators --localnet-version`, but no OpenRouter key flag. Verify exact OpenRouter plugin fields from Studio source in M6; do not write secrets into repo/env.
 
 M5 attempted; runtime and real LLM validation remain blocked. Proceeding to M6 independent deliverables.
+
+### M6 — 2026-10-12
+
+- Added English README, MIT license, architecture/consensus/threat/Studio docs, ABI, isolated network SDK dependencies and resumable deploy/demo scripts. Demo amount is 0.0001 test GEN, capped at 0.001; chain identity and funding checked before decrypting/signing. Tests cover wrong chain, zero balance and reward caps.
+- Stable CLI 0.39.2 estimate failed due to missing SDK function. Explicitly installed CLI 0.40.0-rc.3 and isolated genlayer-py 0.19.0rc2, per official v0.6 release-family documentation. RC `estimate-fees --json` fails at `quoteGasPrice()` for FeeManager 0xF205868bf5db79d2162843742D18D0900A9E462a. Read-only RPC observations stored in artifacts/network-probe.json: code 1159 bytes, GENPerTimeUnit and storageUnitPrice zero, quoteGasPrice/messageFeeParamsBudgetFloor reverted. Current consensus version and usable fee policy remain unresolved.
+- Default Python requests UA received RPC HTTP 403 Cloudflare HTML. Curl requests succeeded; the deployment preflight uses curl for public RPC. No faucet challenge was bypassed.
+- `bash scripts/deploy_bradbury.sh --preflight`: Bradbury address `0x8f374a83965b2143bea962a48c8dacaf0db62d16`, balance 0 wei; no signing/deployment transaction. deployments/bradbury.json explicitly records status blocked, address null, no demo_txs.
+- Created independent PUBLIC evidence sandbox https://github.com/tizerluo/bounty-sandbox. Issue #1 is OPEN; partial PR #2 and complete PR #3 merged. Reopened issue after fixture merges. Created exact public deployer gist https://gist.github.com/tizerluo/e6b1878333f2612ef1a822edbd1590b1. deployments/sandbox.json records public selectors.
+- `python scripts/make_fixtures.py`: fetched public user/issue/merged PR/diff and saved sanitized fixtures used by tests. Normalized account/repo/numbers/time documented in provenance.json; raw diff retained. `curl` of github.com/tizerluo/bounty-sandbox/pull/3.diff returns 302 to patch-diff, final URL returns 200 text/plain. Both retrieved and fixture hashes: b54015422fd6089164383ba0efa5b8043067ab08986aa2375e07b2a9fce3de79.
+- Workflow ready at .github/workflows/ci.yml locally, but first push was rejected by GitHub because CLI OAuth token lacks workflow scope. Read-only connected-app login confirmed tizerluo; its create-file write was blocked with `MCP tool call requires approval, but approval policy is never`. Did not retry that restricted write through another surface. Published source with identical prepared workflow at docs/ci.yml. Owner must grant workflow permission/install it; no workflow run or green CI is claimed.
+- `gh repo create tizerluo/genlayer-issue-bounty --public --source . --push` was attempted in workspace; gh does not recognize separate GIT_DIR. Retried from a clean temporary clone of the same local commits. Repo creation succeeded; after the workflow-bearing push rejection, replaced only the unpublished last commit with a source-only version. Public push then succeeded. Separate workspace metadata now follows public main; local ci-ready branch preserves the full workflow snapshot. Workspace source and ready local workflow remain in the requested directory.
+- `gh repo view ... --json url,isFork,visibility,defaultBranchRef`: PUBLIC, isFork false, main. `gh run list`: empty (blocked workflow publication).
+- Final local verification: `pytest tests/direct tests/experiments -q`: **92 passed** (91 direct/unit + 1 probe); `python scripts/check.py check ... --json`: lint and semantic validation pass, 16 public methods; `PATH=<venv>/bin:$PATH python scripts/check.py typecheck ...`: **no type errors**. Integration suite: **10 skipped**, no real LLM or committee result.
+- Re-fetched official portal contribution-types/52 API (read-only): multiplier 50.0, weekly limit 2, AI review true, escalation threshold 400, evidence groups [[studio-contract,github-repo],[genlayer-explorer-contract]]. Items 1/2 still owner to verify at submission. No submission made.
+- Security review of tracked files: no env/password/keystore/private-key file paths staged. Dependencies/tools/caches and encrypted keystore stay outside the public tracked tree. Final report states absent address/demo evidence and remaining blockers explicitly.
