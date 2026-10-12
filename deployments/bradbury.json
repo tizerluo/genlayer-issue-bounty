@@ -52,7 +52,21 @@
     "repo": "tizerluo/bounty-sandbox",
     "issue": 1,
     "reward_wei": 100000000000000,
-    "status": "OPEN"
+    "status": "OPEN",
+    "bind_tx": "0x365b3f1e3f41e00decddef8fcfb907e432329fae81c61e46eb1c85bcc6afc690",
+    "claim_pr": "https://github.com/tizerluo/bounty-sandbox/pull/4",
+    "merge_commit": "b00eb1dac15ac4d3f1f745f30e74a93fb106010a",
+    "merged_by": "6tizer",
+    "claims": [
+      {
+        "claim_id": 0,
+        "tx": "0xb4c09324bf7858069a9b70256e3f1785baa0029abd6d209411ffb9410fece3e7",
+        "status": "REJECTED",
+        "reason": "NO_ISSUE_REFERENCE",
+        "llm_invoked": false,
+        "diff_sha256": "b39dbb4663918ff018324304c75f586c79d71b50bf5227af79fae27996cb39ab"
+      }
+    ]
   },
   "legacy_minified_contract": "0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE (superseded)"
 }
