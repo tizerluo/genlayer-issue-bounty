@@ -1,0 +1,19 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    env:
+      GENVM_VERSION: v0.2.12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python scripts/check.py check contracts/issue_bounty_escrow.py --json
+      - run: python scripts/check.py typecheck contracts/issue_bounty_escrow.py
+      - run: pytest tests/direct tests/experiments -v -W error::RuntimeWarning
