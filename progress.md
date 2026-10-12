@@ -155,3 +155,45 @@ Implementation and verification notes:
 
 ## Review round 2 (Cursor Agent, claude-opus-5-5-high, 2026-10-12)
 Findings 1–7, 9–13 RESOLVED; #8 PARTIAL (no recovery path for failed async transfer; 7-day lock not aligned to measured appeal window; must test on Bradbury). LOW residuals: U+2028/2029 not filtered; issue-ref regex rejects `* Fixes #12`, CRLF, `Fixes #12, #13`, full URLs; no trusted-merger allowlist. No new CRITICAL/HIGH.
+
+## Deploy size reduction
+
+2026-10-12: owner reported Bradbury rejecting the 31,049-byte source with
+`eth_estimateGas=25.35M` / `gas limit too high`, and requested a maximum of
+18,000 bytes without weakening behavior or any review-round-1 fix.
+
+- Final `contracts/issue_bounty_escrow.py`: **17,831 UTF-8 bytes**, down
+  **13,218 bytes (42.57%)**. SHA-256:
+  `730f0f8a2abe596be3db4cff0efe09d925d8a0a0e352a6b78e12e4c90ecf87e5`.
+- Removed explanatory comments/blank lines, compacted whitespace and simple
+  guarded statements, shortened internal helper/local/storage identifiers,
+  and shared repeated string literals. Kept the pinned dependency header.
+  Moved explanations to [contract notes](docs/CONTRACT_NOTES.md).
+- Shortened prompt wording while retaining all security instructions, seven
+  interpolated expressions, escaping/JSON encoding, evidence/output bounds,
+  and delimiters. Bumped `PROMPT_VERSION` to **BOUNTY_JUDGE_V2**. The only test
+  edits are V1-to-V2 replacements in the config expectation and direct/Studio
+  LLM mocks; no security assertion or test behavior was changed.
+- Parsed the final source and reversed lexical identifier renames and shared
+  literal aliases. Its AST matches the original exactly except prompt literal
+  wording/version; all seven prompt expression trees match. Review-round-1
+  checks, evaluation order, error paths, state changes, and event calls remain.
+- Official `schema` output equals `artifacts/abi.json`: **20 methods**
+  (14 views / 6 writes) with unchanged constructor/method parameter names.
+  AST comparison independently confirms all **six event definitions** match.
+- Validation used `GENVM_VERSION=v0.2.12` and
+  `ISSUE_BOUNTY_CACHE_DIR=/home/box/.genlayer/issue-bounty-cache`:
+  `.venv/bin/python scripts/check.py check contracts/issue_bounty_escrow.py --json`
+  passed all lint and SDK semantic checks. With `.venv/bin` on `PATH`,
+  `.venv/bin/python scripts/check.py typecheck contracts/issue_bounty_escrow.py`
+  reported **no type errors**.
+- `.venv/bin/pytest tests -q -W error::RuntimeWarning`, with Studio/live opt-ins
+  disabled, finished **147 passed, 11 skipped**. Integration cases require
+  Studio/live execution and remain unverified; no deployment was performed.
+- Committed/pushed to `main` through
+  `GIT_DIR=/home/box/.genlayer/issue-bounty-git`. Remote main advanced with
+  `982d170` (CI workflow); Git metadata was fast-forwarded before this commit,
+  preserving that remote tree without writing any workflow file. The
+  preexisting local workflow differs from the remote version and is left
+  untouched and unstaged. This commit has no `.github/workflows` changes.
+  No secrets are printed. No new gas estimate or network deployment is claimed.

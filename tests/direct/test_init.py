@@ -4,7 +4,7 @@ from conftest import CONTRACT
 
 def test_config(escrow):
     assert escrow.get_config() == {'claim_grace_seconds': 259200, 'max_claims_per_claimant': 3,
-                                  'prompt_version': 'BOUNTY_JUDGE_V1', 'score_tolerance': 2, 'max_criteria': 5,
+                                  'prompt_version': 'BOUNTY_JUDGE_V2', 'score_tolerance': 2, 'max_criteria': 5,
                                   'finality_delay_seconds': 604800}
     assert escrow.get_bounty_count() == 0
 

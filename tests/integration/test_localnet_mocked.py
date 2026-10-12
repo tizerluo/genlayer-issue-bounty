@@ -27,7 +27,7 @@ def context(account, merged=True, met=(True,True), count=5, contract_address='0x
     web={u:{'method':'GET','response':{'status':200,'headers':{},'body':v if isinstance(v,str) else json.dumps(v)}} for u,v in data.items()}
     answer={'criteria':[{'id':i+1,'met':m} for i,m in enumerate(met)],'score':9,'summary':'Mock judge'}
     validators=get_validator_factory().batch_create_mock_validators(count=count,
-        mock_llm_response={'nondet_exec_prompt':{'BOUNTY_JUDGE_V1':answer}},
+        mock_llm_response={'nondet_exec_prompt':{'BOUNTY_JUDGE_V2':answer}},
         mock_web_response={'nondet_web_request':web})
     return {'validators':[v.to_dict() for v in validators],'genvm_datetime':'2026-10-12T00:00:00Z'}
 

@@ -66,4 +66,4 @@ def pr(vm, commit_message='Add addition\n\nFixes #12', diff_text=DIFF, **changes
             web(vm, DIFF_URL, diff_text)
 
 def verdict(vm, met=(True, True), score=9, summary='Implemented'):
-    vm.mock_llm('BOUNTY_JUDGE_V1', json.dumps({'criteria': [{'id': i+1, 'met': m} for i,m in enumerate(met)], 'score': score, 'summary': summary}))
+    vm.mock_llm('BOUNTY_JUDGE_V2', json.dumps({'criteria': [{'id': i+1, 'met': m} for i,m in enumerate(met)], 'score': score, 'summary': summary}))
