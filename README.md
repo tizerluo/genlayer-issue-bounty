@@ -1,10 +1,38 @@
 # IssueBountyEscrow
 
-[Prepared GitHub Actions workflow](docs/ci.yml) · [Final report](FINAL_REPORT.md)
+[GitHub Actions workflow](.github/workflows/ci.yml) · [Historical report](FINAL_REPORT.md)
 
 GitHub issue bounties escrowed and judged by GenLayer intelligent-contract consensus. Sponsors define acceptance criteria; developers prove GitHub identity, submit merged PRs, and withdraw rewards after independent AI review.
 
-**Deployment status:** Bradbury deployment and the funded demo are blocked by faucet GitHub sign-in / Turnstile and an unverified live fee policy. No contract address or demo transaction exists yet. See [deployment record](deployments/bradbury.json), [progress](progress.md) and [final report](FINAL_REPORT.md). The new dedicated deployer address is `0x8f374a83965b2143bea962a48c8dacaf0db62d16` (public). Testnet only.
+**Deployment status:** The existing minified Bradbury contract is recorded at
+[`0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE`](https://explorer-bradbury.genlayer.com/address/0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE),
+with demo bounty #0 funded with 0.0001 test GEN. The readable redeploy candidate
+has **not** been deployed. See [deployment record](deployments/bradbury.json)
+and [progress](progress.md#readable-redeploy-candidate). Testnet only.
+
+The [contract source](contracts/issue_bounty_escrow.py) uses descriptive names,
+normal formatting and public method docstrings. A reproducible stored ZIP
+packages its exact source as a zlib payload with a checksum-verified Python
+loader. The readable source is **33,967 bytes**; the deployment package is
+**9,784 bytes**, estimated at **8,627,504 gas** on Bradbury (target ≤15.5M).
+Upload package bytes for redeployment; a raw Python upload still exceeds the cap.
+The public ABI, errors, events, V2 prompt and security behavior are preserved.
+See [packaging research and rationale](docs/CONTRACT_NOTES.md),
+[package manifest](artifacts/issue_bounty_escrow.package.json), and
+[estimate evidence](artifacts/readable-redeploy-gas.json).
+
+Build and estimate without signing or sending a transaction:
+
+```bash
+.venv/bin/python scripts/build_contract_package.py
+node scripts/estimate_deploy_gas.mjs
+```
+
+The estimator resolves the installed `genlayer-js`/`viem` packages from
+`/home/box/genlayer-testnet` by default. Supply a different SDK installation
+as its second argument after the package path. The loader/package also ran in
+the actual pinned GenVM v0.2.12 executable locally; this is runtime evidence,
+not a new Bradbury deployment or a portal submission.
 
 ## How it works
 
@@ -69,9 +97,12 @@ python scripts/check.py typecheck contracts/issue_bounty_escrow.py
 pytest tests/direct tests/experiments -v -W error::RuntimeWarning
 ```
 
-The cache wrapper runs the official GenVM linter/semantic validator without suppressing rules. Caches live in a user-owned mode-0700 directory under `~/.cache/issue-bounty`, with a fresh private temporary directory if HOME is read-only. Ownership, permissions and symlinks are checked before loading code. A persistent private cache can be selected with `ISSUE_BOUNTY_CACHE_DIR`; this workspace uses `/home/box/.genlayer/issue-bounty-cache`. Set `GENVM_VERSION=v0.2.12` for lint/typecheck; direct tests pin that same release explicitly. Tests use the actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **147 passed** (146 direct/unit + 1 M0 SDK probe). The prepared GitHub Actions workflow runs lint, tests and typecheck with Python 3.12 and needs no secrets. **CI publication is blocked:** the CLI token lacks `workflow` scope. CI has not run; no workflow is added by this review round.
-
-On an owner-controlled machine, grant the CLI workflow permission (`gh auth refresh -h github.com -s workflow`), copy `docs/ci.yml` to `.github/workflows/ci.yml`, then commit/push and verify the run is green. The implementation workspace already contains the ready workflow file and retains a local `ci-ready` branch.
+The cache wrapper runs the official GenVM linter/semantic validator without suppressing rules. Caches live in a user-owned mode-0700 directory under `~/.cache/issue-bounty`, with a fresh private temporary directory if HOME is read-only. Ownership, permissions and symlinks are checked before loading code. A persistent private cache can be selected with `ISSUE_BOUNTY_CACHE_DIR`; this workspace uses `/home/box/.genlayer/issue-bounty-cache`. Set `GENVM_VERSION=v0.2.12` for lint/typecheck; direct tests pin that same release explicitly. Tests use the actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **149 passed** (all 147 existing tests plus two package integrity tests).
+The complete suite also passes against the shipped loader with
+`ISSUE_BOUNTY_TEST_PACKAGE=1`. SDK lint, semantic validation and typecheck pass;
+the generated ABI matches [artifacts/abi.json](artifacts/abi.json) exactly.
+The repository's GitHub Actions workflow was left unchanged; these results
+are local checks.
 
 gltest 0.29.2 has incomplete `spawn_sandbox` replay. T-N9–T-N12 and other replay cases use our test-only adapter, which executes the callback in the same process and converts exceptions to SDK result types. Its error conversion and isolation differ from real GenVM; these are weaker callback-level evidence, not multi-validator or protocol validation. The new negative VM-error test verifies callback rejection only. Studio I-4 includes committee disagreement over decisions and immutable references and must supplement these tests when Studio is available. Payout tests independently model native deposits/transfers and assert `contract_balance`; that model does not execute an actual child transfer. The mocked committee and real LLM suites were **11 skipped** due to absent Studio; OpenRouter is also unavailable. See [Studio/OpenRouter setup](docs/STUDIO.md).
 

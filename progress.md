@@ -203,3 +203,66 @@ Findings 1–7, 9–13 RESOLVED; #8 PARTIAL (no recovery path for failed async t
 - First deploy of the 31 KB source failed: eth_estimateGas 25.35M -> RPC "gas limit too high". After size reduction (17.8 KB) estimate 15.15M; deployed with genlayer CLI 0.39.2 (no --fees needed): contract 0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE, tx 0xc0599aca42eccf1c2808635b6e164169a425daf86464396a6fb092b5dba2d3a4, FINISHED_WITH_RETURN.
 - Demo bounty #0 (0.0001 test GEN, tizerluo/bounty-sandbox#1) created via genlayer-js writeContract with value (CLI write has no value flag — item 13; genlayer-py 0.19.0rc2 estimateGas reverts): tx 0xcbb71f1a1919202b69f0e8fb6af8b2328e25493f0828f90d269f5d75c1143efb, FINISHED_WITH_RETURN, get_bounty(0) status OPEN.
 - Not yet done: bind_github / submit_claim / withdraw live flow (needs fresh post-creation PR merged by a different GitHub id).
+
+## Readable redeploy candidate
+
+- Restored `contracts/issue_bounty_escrow.py` with descriptive full-word
+  identifiers, four-space formatting, short docstrings on all 20 public
+  methods, and a named multiline prompt constant. No single-letter identifiers
+  or parameters remain. The reviewed AST structure is preserved; ten hostile
+  and ordinary prompt cases match the deployed V2 prompt byte for byte.
+- Research found a usable packaging route: GenVM supports multi-file stored
+  ZIP runners, the pinned CPython supports zlib, and genlayer-py accepts raw
+  code bytes. Compressed **ZIP entries** are unsupported. Instead, the package
+  stores a zlib payload and a small readable loader in uncompressed ZIP entries.
+  The loader verifies the source length/SHA-256 and executes precisely the
+  reviewed source in `/contract.py`. There is no library address, external code
+  fetch, signing, or new consensus boundary. Detailed primary references and
+  the separate-library analysis are in [contract notes](docs/CONTRACT_NOTES.md).
+- Source: **33,967 UTF-8 bytes**, SHA-256
+  `a1634907a84fbfeb45b6b6b2c7c56e201664a8b644b259f8a8ebe885007932e7`.
+  Deterministic deployment ZIP: **9,784 bytes**, SHA-256
+  `41924553f895b1b3a7750c3211020597c60a47b6913ec0b868a37d052fb02e46`.
+  See [package manifest](artifacts/issue_bounty_escrow.package.json).
+- Bradbury `eth_estimateGas` for the exact packaged deploy calldata:
+  **8,627,504 gas**, below the **15,500,000** target and the suspected
+  **16,777,216** per-transaction cap. Public sender, chain 4221, five initial
+  validators, three rotations, constructor `[259200, 3]`, value zero.
+  [Recorded estimate](artifacts/readable-redeploy-gas.json).
+  The minified baseline re-estimated at 14,959,770 gas. An intermediate readable
+  single-file refactor (25,820 bytes) estimated 21,139,113 gas; that refactor was
+  discarded in favor of restoring the reviewed implementation and packaging it.
+  Raw readable `.py` upload is **not** the deploy candidate.
+- `scripts/build_contract_package.py` creates the reproducible stored ZIP and
+  checksum manifest. `scripts/estimate_deploy_gas.mjs` encodes the bytes with
+  the installed genlayer-js/viem SDK and calls only `eth_chainId` and
+  `eth_estimateGas` via curl. `scripts/deploy_bradbury.py` now builds package
+  bytes for its existing future deployment flow; it was never invoked here.
+- All **147 existing tests** pass. Two additional integrity tests verify
+  deterministic ZIP/source roundtrip and reject substituted source before
+  execution: **149 passed** normally and **149 passed** with
+  `ISSUE_BOUNTY_TEST_PACKAGE=1`, which runs the same suite through the shipped
+  loader and emulates only its local VFS file mapping. The official lint and
+  SDK semantic validation pass; typecheck reports no type errors. The SDK ABI
+  matches `artifacts/abi.json` exactly: 20 methods, the original constructor
+  parameters, and unchanged six event definitions. Review-round-1 security
+  checks, error strings, mutation order, accounting and finality policy remain.
+- The actual pinned GenVM v0.2.12 executable successfully constructed the
+  packaged contract and returned an ABI identical to the committed ABI.
+  The loader also passed real nondeterministic and sandbox child-VM replay;
+  those probes use a temporary test method absent from the shipped package.
+  [Local runtime evidence](artifacts/package-runtime-validation.json) and
+  `scripts/verify_contract_package.py` document execution scope. This is local
+  Wasm execution with an in-memory host, not a new Bradbury contract execution.
+- Compatibility limits: binary packages require bytes-capable SDK deployment.
+  UTF-8-only CLI/explorer source tools must extract the payload or use the
+  published readable source and hashes. Portal binary acceptance has not been
+  tested; no submission was made. Live committee/provider behavior and deferred
+  transfers retain the previously documented limitations.
+- Pulled/rebased `origin main` through
+  `GIT_DIR=/home/box/.genlayer/issue-bounty-git` using a temporary clean worktree,
+  because the preexisting local CI workflow change prevents a normal rebase.
+  Upstream was already current. The workflow was not edited or staged by this
+  task. Source, package, verification tools, README and these notes are committed
+  and pushed to `main`; there are no workflow changes in the commit.
+- **No transactions sent. No keys decrypted or secrets printed. No deployment.**

@@ -1,17 +1,30 @@
 """仅把官方 SDK 下载缓存移到可写目录。"""
 from gltest.direct import sdk_loader
 import pytest
+import os
+from pathlib import Path
+import zipfile
 from scripts.cache_paths import private_cache
 
 # 0.29.2 的清理逻辑用路径子串识别 SDK，因此保留 gltest-direct。
 sdk_loader.CACHE_DIR = private_cache('gltest-direct')
 
 @pytest.fixture
-def direct_deploy(direct_deploy):
+def direct_deploy(direct_deploy, tmp_path):
     """使用与 Depends 探针一致的官方版本，不依赖共享缓存或 latest。"""
-    def deploy(*args, **kwargs):
+    def deploy(contract_path, *args, **kwargs):
         kwargs.setdefault('sdk_version', 'v0.2.12')
-        return direct_deploy(*args, **kwargs)
+        if os.environ.get('ISSUE_BOUNTY_TEST_PACKAGE') == '1' and Path(contract_path).name == 'issue_bounty_escrow.py':
+            from scripts.build_contract_package import OUTPUT, PAYLOAD_PATH, build_package
+            assert OUTPUT.read_bytes() == build_package(), 'Rebuild the deployment package before testing'
+            with zipfile.ZipFile(OUTPUT) as archive:
+                payload_path = tmp_path / 'source.zlib'
+                payload_path.write_bytes(archive.read('source.zlib'))
+                # Emulate only the GenVM VFS mount; execute the shipped loader unchanged otherwise.
+                loader = archive.read('file').decode().replace(repr(PAYLOAD_PATH), repr(str(payload_path)))
+            contract_path = tmp_path / 'issue_bounty_escrow.py'
+            contract_path.write_text(loader)
+        return direct_deploy(contract_path, *args, **kwargs)
     return deploy
 
 @pytest.fixture

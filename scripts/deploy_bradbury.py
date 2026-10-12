@@ -4,8 +4,10 @@ import sys
 from datetime import datetime,timezone
 if __package__:
     from .network_common import *
+    from .build_contract_package import build_package
 else:
     from network_common import *
+    from build_contract_package import build_package
 
 def main():
     parser=argparse.ArgumentParser()
@@ -36,7 +38,7 @@ def main():
     # 已发送的部署交易始终先查回执，防止重跑脚本造成重复部署。
     tx=manifest.get('deploy_tx')
     if not tx:
-        tx=hex_hash(client.deploy_contract(code=(ROOT/'contracts/issue_bounty_escrow.py').read_text(),
+        tx=hex_hash(client.deploy_contract(code=build_package(ROOT/'contracts/issue_bounty_escrow.py'),
                       args=[259200,3],fees=fee_options(args.fees_file,'deploy')))
         manifest.update({'deploy_tx':tx,'status':'pending'})
         save_manifest(manifest)
