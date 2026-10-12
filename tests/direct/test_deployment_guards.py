@@ -1,13 +1,8 @@
 """部署安全边界：链检查先于读取密钥，零余额时不解密。"""
-from pathlib import Path
 import sys
 import pytest
 
-# 脚本直接执行与测试导入共享同一模块。
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'scripts'))
-import network_common
-import deploy_bradbury
-import demo_flow
+from scripts import network_common, deploy_bradbury, demo_flow
 
 def test_wrong_chain_stops_before_key_read(monkeypatch):
     monkeypatch.setattr(network_common,'rpc',lambda method,params:'0x1')

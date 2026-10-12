@@ -36,7 +36,7 @@ def signer():
     from genlayer_py import create_account
     if stat.S_IMODE(PASSWORD.stat().st_mode) != 0o600:
         raise RuntimeError('Password file must have mode 0600')
-    private_key=Account.decrypt(json.loads(KEYSTORE.read_text()),PASSWORD.read_text())
+    private_key=Account.decrypt(json.loads(KEYSTORE.read_text()),PASSWORD.read_text().rstrip('\n'))
     account=create_account(private_key)
     del private_key
     return account
@@ -61,6 +61,35 @@ def confirmed(client,tx_hash):
     if not is_successful(receipt):
         raise RuntimeError('Transaction did not finalize with successful execution')
     return receipt
+
+def created_bounty_id(receipt):
+    """只解码这笔创建交易的实际返回值；不猜测计数器或读取全局最新 id。"""
+    import base64
+    import rlp
+    from genlayer_py.abi import calldata
+    raw = receipt.get('tx_receipt')
+    try:
+        if raw and raw != '0x':
+            execution, _ = rlp.decode(bytes.fromhex(raw.removeprefix('0x')))
+            result = execution[0]
+            if len(result) != 2 or int.from_bytes(result[0], 'big') != 0:
+                raise ValueError('Creation did not return')
+            encoded = result[1]
+        else:
+            leaders = receipt.get('consensus_data', {}).get('leader_receipt', [])
+            leader = leaders[0] if isinstance(leaders, list) and leaders else leaders
+            result = leader['result']
+            # localnet SDK 暴露的 result.raw 含返回类型前缀。
+            encoded_result = base64.b64decode(result['raw'], validate=True)
+            if not encoded_result or encoded_result[0] != 0:
+                raise ValueError('Creation did not return')
+            encoded = encoded_result[1:]
+        bounty_id = calldata.decode(encoded)
+        if type(bounty_id) is not int or bounty_id < 0:
+            raise ValueError('Invalid bounty id')
+        return bounty_id
+    except (ValueError, TypeError, KeyError, IndexError, rlp.DecodingError) as exc:
+        raise RuntimeError('Creation receipt has no verifiable bounty id; retain transaction hash and obtain full execution receipt') from exc
 
 def fee_options(path,method):
     data=json.loads(Path(path).read_text())

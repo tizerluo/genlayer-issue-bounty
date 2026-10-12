@@ -2,6 +2,7 @@
 import os
 import socket
 import pytest
+from .network_guard import require_localnet
 
 @pytest.fixture(autouse=True)
 def studio_required():
@@ -9,8 +10,7 @@ def studio_required():
         pytest.skip('Set ISSUE_BOUNTY_STUDIO_TESTS=1 with a running local Studio')
     from gltest_cli.config.general import get_general_config
     config = get_general_config()
-    if config.get_network_name() != 'localnet':
-        pytest.fail('Mock integration tests require localnet')
+    require_localnet(config)
     try:
         with socket.create_connection(('127.0.0.1',4000),timeout=2):
             pass

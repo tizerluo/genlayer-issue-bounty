@@ -63,6 +63,17 @@
       "readonly": true,
       "ret": "dict"
     },
+    "get_bind_nonce": {
+      "params": [
+        [
+          "github_id",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
     "get_bounties": {
       "params": [
         [
@@ -121,6 +132,21 @@
       "readonly": true,
       "ret": "int"
     },
+    "get_claim_count_for_github_id": {
+      "params": [
+        [
+          "bounty_id",
+          "int"
+        ],
+        [
+          "github_id",
+          "int"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
     "get_claims_for_bounty": {
       "params": [
         [
@@ -139,6 +165,17 @@
       "ret": "dict"
     },
     "get_credit": {
+      "params": [
+        [
+          "wallet",
+          "string"
+        ]
+      ],
+      "kwparams": {},
+      "readonly": true,
+      "ret": "int"
+    },
+    "get_credit_unlock_at": {
       "params": [
         [
           "wallet",
@@ -201,6 +238,18 @@
     },
     "withdraw": {
       "params": [],
+      "kwparams": {},
+      "readonly": false,
+      "ret": "null",
+      "payable": false
+    },
+    "withdraw_to": {
+      "params": [
+        [
+          "recipient",
+          "string"
+        ]
+      ],
       "kwparams": {},
       "readonly": false,
       "ret": "null",

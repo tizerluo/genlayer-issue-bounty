@@ -3,7 +3,7 @@
 | 项 | 内容 |
 |---|---|
 | 文档版本 | v1.0（2026-10-12） |
-| 状态 | 草案，待业主确认第 10 节中的选项 |
+| 状态 | 已按会话决定实施；2026-10-12 Review round 1 增补安全要求 |
 | 目标读者 | 业主（GitHub：`tizerluo`）；实现者（Codex） |
 | 用途 | 作为 Builder 门户「Intelligent Contracts」积分项的一次提交的完整实现规格 |
 | 约定 | **MUST** = 必须实现；**SHOULD** = 强烈建议；**MAY** = 可选。"待核实" = 公开资料未能确认，实现前需要验证 |
@@ -11,6 +11,8 @@
 **TL;DR**：推荐实现 `IssueBountyEscrow`。赞助者为某个 GitHub issue 锁定 GEN 赏金并写下 1–5 条验收标准；开发者先用 gist 证明自己拥有某个 GitHub 账号，再提交已合并的 PR 来认领。合约分两步裁决：第一步用确定性规则检查 GitHub 上的客观事实（PR 是否已合并、作者是否就是认领人、是否引用了该 issue、是否在截止时间前合并），这一步用 `strict_eq` 达成共识；第二步让 LLM 对照 diff 逐条判断验收标准，验证者用自定义 validator 独立重跑，只比较决策字段，分数允许容差。验收通过后，赏金记入获奖者的可提取余额，由获奖者自己调用 `withdraw` 提走。这个设计同时用到网页读取和 LLM，有真实的资金流和状态机，也有经过推敲的共识设计，正好对应门户对这一类目的要求（见 1.2）。
 
 ---
+
+Review round 1 的安全增补见 [PRD deviation notes](docs/PRD_DEVIATIONS.md)。该说明覆盖身份标记、认领门槛、提示词、重试和提取规则；下文保留的早期示例须以增补和当前合约为准。
 
 ## 1. 背景与目标
 
@@ -203,7 +205,7 @@
 | FR-04 | MUST | `criteria` 为 1–5 条，每条去除空白后非空、≤200 字符、互不重复；以规范 JSON 字符串存储（理由见 4.2） |
 | FR-05 | MUST | `deadline` 必须满足 `now + 3600 ≤ deadline ≤ now + 180 天`，`now` 为交易时间戳 |
 | FR-06 | MUST | **认领** `submit_claim(bounty_id, pr_number)`：前置条件为赏金存在且 OPEN、`now ≤ deadline + claim_grace_seconds`、调用者已绑定、该调用者对该赏金的认领次数小于 `max_claims_per_claimant` |
-| FR-07 | MUST | 认领第一步（客观门槛，ND-3）：读取 PR 元数据和 diff，抽取稳定字段并计算 `diff_sha256`。按以下顺序判定，任一不满足即记录 `REJECTED` 和对应原因码，**不调用 LLM**：`PR_NOT_FOUND` → `WRONG_BASE_REPO` → `NOT_MERGED` → `AUTHOR_MISMATCH`（PR 作者 id ≠ 认领人绑定的 id）→ `MERGED_AFTER_DEADLINE` → `NO_ISSUE_REFERENCE` |
+| FR-07 | MUST | 认领第一步（客观门槛，ND-3）：读取 PR、不可编辑的合并提交 message 和 diff，计算 `diff_sha256`。按顺序判定，失败记录 REJECTED，**不调用 LLM**：`PR_NOT_FOUND` → `WRONG_BASE_REPO` → `NOT_MERGED` → `AUTHOR_MISMATCH` → `NOT_DEFAULT_BRANCH` → `MERGER_NOT_VERIFIED` → `SELF_MERGED` → `MERGED_BEFORE_BOUNTY` → `MERGED_AFTER_DEADLINE` → `NO_ISSUE_REFERENCE`。要求 `created_at ≤ merged_at ≤ deadline`、合并者 id 与作者不同、base.ref 等于默认分支；issue 关联只认合并提交中的独立肯定关闭行，拒绝可编辑 PR 正文/标题、否定句和裸 URL。 |
 | FR-08 | MUST | 认领第二步（LLM 验收，ND-4）：重新读取 diff 并校验哈希与第一步一致；把 issue 快照、标准、PR 标题和正文、截断后的 diff 交给 LLM，逐条输出 `met` 和总分；由确定性函数 `_decide` 给出 ACCEPT 或 REJECT |
 | FR-09 | MUST | ACCEPT 的条件：**所有标准均为 met** 且 `score ≥ min_score`。ACCEPT 时赏金转为 AWARDED，记录 winner 和 winning_claim_id，`credits[claimant] += reward` |
 | FR-10 | MUST | 每次认领（无论通过与否）都存为一条 Claim，包含原因码、`diff_sha256`、各条结果、分数和摘要，作为链上可审计证据 |

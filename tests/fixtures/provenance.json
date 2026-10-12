@@ -12,7 +12,9 @@
     "user/login/id and repo replaced by alice/42 and owner/project",
     "issue/pr numbers mapped to 12/34",
     "merge time fixed to direct test timestamp",
-    "gist marker is a synthetic placeholder; helpers substitute caller address",
+    "gist marker is synthetic; helpers substitute contract, caller and current nonce",
+    "independent merger id 99, default branch main and merge commit SHA a*40 are synthetic security test metadata",
+    "merge commit message Fixes #12 is synthetic mocked evidence, not live sandbox eligibility",
     "unmerged variant derived from merged PR; raw public diff preserved"
   ]
 }

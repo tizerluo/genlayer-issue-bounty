@@ -18,19 +18,20 @@ flowchart LR
     F --> G[Diff hash + independent LLM judges]
     G --> H[AWARDED / winner credit]
     D --> I[Expired / creator refund credit]
-    H --> J[Withdraw at finalization]
+    H --> K[Seven-day award credit hold]
+    K --> J[Withdraw / withdraw_to]
     I --> J
 ```
 
-Escrow removes the sponsor's ability to delay an accepted payout. Each accepted claim must refer to the correct issue, be merged before the deadline, and belong to the bound numeric GitHub id. Failed business claims are recorded for audit; transient infrastructure errors leave state untouched. Zero-value reputation bounties are supported alongside funded bounties.
+Each accepted claim must belong to the bound numeric GitHub id, be merged between bounty creation and its deadline into the default branch by another GitHub id, and have an affirmative closing line in its immutable merge commit message. Editing the PR title/body cannot establish eligibility. Failed business claims are recorded for audit; transient infrastructure errors leave state untouched. Zero-value reputation bounties are supported alongside funded bounties.
 
 ## Consensus
 
 | Stage | Evidence | Equivalence |
 | --- | --- | --- |
-| ND-1 identity | GitHub user id and exact public gist marker | processed canonical JSON, strict_eq |
+| ND-1a identity / ND-1b proof | GitHub user id, then exact contract/wallet/nonce gist marker and owner id | two canonical JSON strict_eq calls; storage nonce captured between calls |
 | ND-2 bounty | Open issue metadata and bounded snapshot | processed canonical JSON, strict_eq |
-| ND-3 claim facts | Merge metadata, author, base repo, issue reference, raw diff SHA-256 | processed canonical JSON, strict_eq |
+| ND-3 claim facts | Merge metadata, independent merger, default branch, immutable commit reference, raw diff SHA-256 | processed canonical JSON, strict_eq |
 | ND-4 assessment | Re-fetched hash-anchored diff, snapshot and criteria | independent LLM rerun; exact decision, score ±2, reject criterion Hamming distance ≤1 |
 
 Validators read their own evidence and call their own LLM. The decision is ACCEPT only when every criterion is met and the score reaches the sponsor's minimum. Score tolerance never overrides a disagreement across that threshold. Summaries do not decide payment. A forged, well-formed ACCEPT is rejected when the validator independently judges REJECT.
@@ -41,17 +42,18 @@ Validators read their own evidence and call their own LLM. The decision is ACCEP
 
 | Write method | Purpose |
 | --- | --- |
-| `bind_github(github_login)` | Verify a public gist description exactly equal to `genlayer-bounty-bind:<lowercase caller address>` |
+| `bind_github(github_login)` | Verify the gist owner and exact description `genlayer-bounty-bind:<lowercase contract address>:<lowercase caller address>:<current nonce>`; advance the GitHub id's nonce on success |
 | `create_bounty(repo, issue_number, criteria: list[str], deadline, min_score)` | Payable; snapshot open issue, 1–5 unique criteria, escrow `value` |
 | `submit_claim(bounty_id, pr_number)` | Record a rejection or award escrow to claimant credit |
 | `refund(bounty_id)` | Creator only, OPEN and strictly after deadline + grace |
-| `withdraw()` | Clear caller's positive credit, emit EOA native transfer |
+| `withdraw()` | After the credit hold, clear caller's positive credit and request a transfer to the caller |
+| `withdraw_to(recipient)` | Same credit/hold checks; caller chooses a receiving EOA; zero, malformed and escrow addresses are rejected |
 
 Constructor: `(claim_grace_seconds=259200, max_claims_per_claimant=3)` must be supplied explicitly. Config bounds: grace 1 second–30 days, attempt limit 1–10. Deadlines: one hour–180 days from transaction time. Minimum score: 1–10. Criteria: nonempty, trimmed, unique, at most 200 characters each.
 
-Views: `get_config`, `get_bounty`, `get_bounties(offset, limit≤50)`, `get_bounty_count`, `get_claim`, `get_claims_for_bounty`, `get_github_binding`, `get_wallet_for_github_id`, `get_credit`, `get_accounting`, `get_claim_count`. See [ABI](artifacts/abi.json). Events: GithubBound, BountyCreated, ClaimEvaluated, BountyAwarded, BountyRefunded, Withdrawn.
+Views: `get_config`, `get_bounty` (includes `awarded_at`), `get_bounties(offset, limit≤50)`, `get_bounty_count`, `get_claim`, `get_claims_for_bounty`, `get_github_binding`, `get_wallet_for_github_id`, `get_credit`, `get_accounting`, `get_claim_count`, `get_claim_count_for_github_id`, `get_bind_nonce`, `get_credit_unlock_at`. Wallet claim counts resolve the currently bound GitHub id; use the numeric-id view after unbinding. See [ABI](artifacts/abi.json). Events: GithubBound, BountyCreated, ClaimEvaluated, BountyAwarded, BountyRefunded, Withdrawn.
 
-Rejection reasons: PR_NOT_FOUND, WRONG_BASE_REPO, NOT_MERGED, AUTHOR_MISMATCH, MERGED_AFTER_DEADLINE, NO_ISSUE_REFERENCE, CRITERIA_NOT_MET, SCORE_BELOW_MIN. Reverts have fixed `[EXPECTED]`, `[EXTERNAL]`, `[TRANSIENT]` or `[LLM_ERROR]` messages. Full reasons/interfaces are specified in [approved PRD](docs-PRD.md).
+Rejection reasons: PR_NOT_FOUND, WRONG_BASE_REPO, NOT_MERGED, AUTHOR_MISMATCH, NOT_DEFAULT_BRANCH, MERGER_NOT_VERIFIED, SELF_MERGED, MERGED_BEFORE_BOUNTY, MERGED_AFTER_DEADLINE, NO_ISSUE_REFERENCE, CRITERIA_NOT_MET, SCORE_BELOW_MIN. Repeated judged `(bounty, PR, raw diff hash)` reverts with ALREADY_JUDGED before another LLM call. Attempts are limited per bounty/GitHub id, across wallet migration. Reverts have fixed `[EXPECTED]`, `[EXTERNAL]`, `[TRANSIENT]` or `[LLM_ERROR]` messages. See [PRD security amendments](docs/PRD_DEVIATIONS.md).
 
 ## Reproduce tests
 
@@ -61,15 +63,17 @@ Python 3.12+:
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+export GENVM_VERSION=v0.2.12
 python scripts/check.py check contracts/issue_bounty_escrow.py --json
+python scripts/check.py typecheck contracts/issue_bounty_escrow.py
 pytest tests/direct tests/experiments -v -W error::RuntimeWarning
 ```
 
-The cache wrapper runs the official GenVM linter/semantic validator under `/tmp`. It does not suppress rules. Tests use the pinned actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **94 passed** (93 direct/unit + 1 M0 SDK probe). The prepared GitHub Actions workflow runs these checks with Python 3.12 and needs no secrets. **CI publication is blocked:** the CLI token lacks `workflow` scope, and the connected app's write requires approval while this environment's approval policy is `never`. CI has not run.
+The cache wrapper runs the official GenVM linter/semantic validator without suppressing rules. Caches live in a user-owned mode-0700 directory under `~/.cache/issue-bounty`, with a fresh private temporary directory if HOME is read-only. Ownership, permissions and symlinks are checked before loading code. A persistent private cache can be selected with `ISSUE_BOUNTY_CACHE_DIR`; this workspace uses `/home/box/.genlayer/issue-bounty-cache`. Set `GENVM_VERSION=v0.2.12` for lint/typecheck; direct tests pin that same release explicitly. Tests use the actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **147 passed** (146 direct/unit + 1 M0 SDK probe). The prepared GitHub Actions workflow runs lint, tests and typecheck with Python 3.12 and needs no secrets. **CI publication is blocked:** the CLI token lacks `workflow` scope. CI has not run; no workflow is added by this review round.
 
 On an owner-controlled machine, grant the CLI workflow permission (`gh auth refresh -h github.com -s workflow`), copy `docs/ci.yml` to `.github/workflows/ci.yml`, then commit/push and verify the run is green. The implementation workspace already contains the ready workflow file and retains a local `ci-ready` branch.
 
-gltest 0.29.2 has incomplete Sandbox replay; a test-only adapter executes the original callback for strict_eq validation. It does not simulate VM isolation or committee finality. Direct tests observe external transfer requests; actual native balances require network verification. The mocked committee and real LLM suites were **10 skipped** due to absent Studio; OpenRouter is also unavailable. See [Studio/OpenRouter setup](docs/STUDIO.md) to run them.
+gltest 0.29.2 has incomplete `spawn_sandbox` replay. T-N9–T-N12 and other replay cases use our test-only adapter, which executes the callback in the same process and converts exceptions to SDK result types. Its error conversion and isolation differ from real GenVM; these are weaker callback-level evidence, not multi-validator or protocol validation. The new negative VM-error test verifies callback rejection only. Studio I-4 includes committee disagreement over decisions and immutable references and must supplement these tests when Studio is available. Payout tests independently model native deposits/transfers and assert `contract_balance`; that model does not execute an actual child transfer. The mocked committee and real LLM suites were **11 skipped** due to absent Studio; OpenRouter is also unavailable. See [Studio/OpenRouter setup](docs/STUDIO.md).
 
 ## Bradbury deployment and small funded demo
 
@@ -89,12 +93,18 @@ bash scripts/deploy_bradbury.sh --fees-file artifacts/fee-estimates.json
 
 The demo reward is **0.0001 test GEN**, capped at 0.001 test GEN. Fee JSON contains separate `deploy`, `bind_github`, `create_bounty`, `submit_claim`, `withdraw` entries with the SDK's measured distribution and feeValue; withdraw also requires measured external-message allocations. Fee profiles could not be generated without Studio. Stable CLI 0.39.2 has a missing estimate function; RC 0.40.0-rc.3 reaches FeeManager but `quoteGasPrice()` reverts. Resolve compatibility and quote fees before sending; do not assume the network is gasless from those errors. Python network SDK 0.19.0rc2 is isolated from the stable gltest dependency set.
 
-Publish a public gist with the deployer marker before running `bind_github`. [Sandbox manifest](deployments/sandbox.json) holds an open issue and complete/partial merged PRs. Each sent transaction hash is persisted before waiting, allowing interrupted runs to resume. Successful execution is verified at finalization. The explorer contract link will be `https://explorer-bradbury.genlayer.com/address/<verified contract address>` after deployment.
+After deployment, look up the account's numeric GitHub id and call `get_bind_nonce(id)` (initially 0). Publish a gist owned by that id with `genlayer-bounty-bind:<contract>:<wallet>:<nonce>` using lowercase hex addresses, then bind. Every successful bind advances the nonce; an old proof cannot reclaim a migrated identity or bind another deployment.
+
+The historical PRs #2/#3 and old address-only gist in the [sandbox manifest](deployments/sandbox.json) are **obsolete demo evidence**. A valid demo must create its bounty first, then have another GitHub id merge fresh partial/complete PRs into the default branch before the deadline. Include a standalone `Fixes #1` line in each merge commit message. Update the manifest selectors and mark `claim_evidence_status` as `ready_after_creation` only after verification. The demo pauses after creation until those selectors are ready, and again until award credits mature. Each sent transaction hash is persisted before waiting. The bounty id comes from that creation transaction's execution receipt, so concurrent creation and resumption cannot change it. If the network omits execution bytes, the script stops and retains the hash instead of guessing an id. The explorer contract link will be `https://explorer-bradbury.genlayer.com/address/<verified contract address>` after deployment.
 
 ## Security and limitations
 
-Identity uses numeric ids, latest valid proof wins, and untrusted prompt tags are escaped. All nondeterministic captures are plain memory values. Accounting conserves deposits across escrow, credits and withdrawals. See [architecture](docs/ARCHITECTURE.md) and [threat model](docs/THREAT_MODEL.md).
+Identity uses numeric ids, nonce-bound owner-checked proofs and persistent attempt counts across wallet migration. All text is stripped of Unicode control/format characters, angle brackets are escaped, and prompt data is JSON encoded. Sponsor criteria are inspection targets in `<acceptance_criteria>`; the judge uses only diff implementation evidence and excludes editable PR title/body. All nondeterministic captures are plain memory values. See [architecture](docs/ARCHITECTURE.md), [threat model](docs/THREAT_MODEL.md) and [review fix/test mapping](progress.md#review-round-1).
 
-GitHub edits/rate limits can halt consensus. The first 12,000 diff characters are judged; missing evidence is rejected. LLM judgments remain fallible. Attempt limits are per wallet and can be bypassed by identity migration. `total_withdrawn` means a transfer was requested; a failed downstream transfer is not automatically restored, and this version has no recovery method. Live fees, committee consensus and final EOA delivery remain unverified. No production or scoring claim is made.
+GitHub edits/rate limits can halt consensus. Immutable closing evidence accepts only standalone affirmative `Fixes/Closes/Resolves #n` or `owner/repo#n` lines; bare links and other prose are insufficient. The default branch is read at claim time and can change. Independent GitHub ids do not prevent colluding accounts. The first 12,000 diff characters are judged; missing evidence is rejected. LLM judgments remain fallible.
+
+Awards record transaction-time `awarded_at`; a positive award locks the wallet's aggregate credit until at least `awarded_at + FINALITY_DELAY` (seven days). Later awards extend the hold for all credits, including previously matured awards/refunds. Refund-only credit is immediately withdrawable. Both withdrawal methods enforce the same hold and clear credit before emitting a transfer. `withdraw_to` lets a contract-wallet caller choose an EOA; the contract cannot establish that an address is an EOA. Synchronous request-emission errors restore credit/accounting before propagating the error.
+
+**Unverified protocol behavior:** seven days is a conservative local policy, not a verified Bradbury appeal/finality window. Whether an overturned award rolls back dependent withdrawals and when emitted messages become irreversible still requires live testing. `total_withdrawn` counts requested transfers. A later failed child transfer cannot be caught by this contract and has no automatic recovery; recipient selection helps avoid failure but cannot recover a transfer already emitted. Before any production funding, verify an appeal/reversal and a deliberately failing child transfer on Bradbury, including fees, receipt statuses and balances. Live fees, committee consensus and final EOA delivery remain unverified. No production or scoring claim is made.
 
 This is a new independent repository, not a boilerplate fork. Future work includes production transfer recovery and broader live consensus measurement, followed by any separately approved frontend. MIT licensed. The owner submits builder evidence; this agent does not submit the portal form.

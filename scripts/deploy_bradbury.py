@@ -2,7 +2,10 @@
 import argparse
 import sys
 from datetime import datetime,timezone
-from network_common import *
+if __package__:
+    from .network_common import *
+else:
+    from network_common import *
 
 def main():
     parser=argparse.ArgumentParser()

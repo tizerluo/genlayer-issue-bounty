@@ -33,10 +33,11 @@ def main():
     def save(name,data):
         (folder/name).write_text(json.dumps(data,indent=2)+'\n')
     save('user_alice.json',{'id':42,'login':'alice'})
-    save('gists_alice.json',[{'description':'genlayer-bounty-bind:0x'+'0'*40,'owner':{'id':42}}])
+    save('gists_alice.json',[{'description':'genlayer-bounty-bind:0x'+'0'*40+':0x'+'0'*40+':0','owner':{'id':42}}])
     save('issue_open.json',{'state':issue['state'],'title':issue['title'],'body':issue.get('body') or ''})
     normalized={'merged':True,'merged_at':'2026-10-12T01:00:00Z','user':{'id':42},
-        'base':{'repo':{'full_name':'owner/project'}},'title':pr['title'],'body':'Fixes #12'}
+        'merged_by':{'id':99},'merge_commit_sha':'a'*40,
+        'base':{'ref':'main','repo':{'full_name':'owner/project','default_branch':'main'}},'title':pr['title'],'body':'Fixes #12'}
     save('pr_merged.json',normalized)
     save('pr_unmerged.json',{**normalized,'merged':False,'merged_at':None})
     (folder/'pr_merged.diff').write_bytes(diff)
@@ -44,7 +45,9 @@ def main():
           'raw_diff_sha256':hashlib.sha256(diff).hexdigest(),'source_merged_at':pr['merged_at'],
           'normalizations':['user/login/id and repo replaced by alice/42 and owner/project',
           'issue/pr numbers mapped to 12/34','merge time fixed to direct test timestamp',
-          'gist marker is a synthetic placeholder; helpers substitute caller address',
+          'gist marker is synthetic; helpers substitute contract, caller and current nonce',
+          'independent merger id 99, default branch main and merge commit SHA a*40 are synthetic security test metadata',
+          'merge commit message Fixes #12 is synthetic mocked evidence, not live sandbox eligibility',
           'unmerged variant derived from merged PR; raw public diff preserved']})
     print('Saved sanitized fixtures from public merged PR:',urls['pr'])
 

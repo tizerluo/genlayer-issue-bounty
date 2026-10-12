@@ -4,9 +4,15 @@
   "user": {
     "id": 42
   },
+  "merged_by": {
+    "id": 99
+  },
+  "merge_commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "base": {
+    "ref": "main",
     "repo": {
-      "full_name": "owner/project"
+      "full_name": "owner/project",
+      "default_branch": "main"
     }
   },
   "title": "Complete fixture: addition plus usage examples",

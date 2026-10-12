@@ -1,5 +1,6 @@
 """T-N：独立重跑验证者；不以格式检查代替证据判断。"""
 import hashlib
+import importlib
 import pytest
 from tests.helpers import pr, verdict, web, DIFF_URL, DIFF
 
@@ -70,3 +71,14 @@ def test_strict_facts_disagree(ready,direct_vm,replay_validator):
     direct_vm.clear_mocks()
     pr(direct_vm,merged=False)
     assert replay_validator(index=-2) is False
+
+def test_validator_vm_error_cannot_approve(ready,direct_vm,replay_validator,monkeypatch):
+    # 负向控制仅证明回调拒绝异常；真实 GenVM 错误转换/隔离仍须 I-4 验证。
+    pr(direct_vm)
+    verdict(direct_vm)
+    ready.submit_claim(0,34)
+    module=importlib.import_module('_contract_issue_bounty_escrow')
+    def fail(url):
+        raise RuntimeError('simulated validator VM failure')
+    monkeypatch.setattr(module,'_diff',fail)
+    assert replay_validator() is False

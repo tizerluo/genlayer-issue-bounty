@@ -3,18 +3,18 @@
 | Threat | Control | Remaining limitation |
 | --- | --- | --- |
 | GitHub login rename/reuse | Bind and verify numeric user id | GitHub account compromise transfers proof authority |
-| Binding another wallet | Exact gist marker from user's own public gist list | Latest proof wins; only latest 100 public gists scanned |
-| False PR claims | Check merged status, base repo, author id, merge deadline and issue reference before LLM | Maintainer merge is a trusted human gate, not proof of correctness |
+| Binding another wallet / stale proof | Exact contract/wallet/nonce marker, matching gist owner, nonce advances after every successful binding | Latest 100 public gists scanned; GitHub compromise permits fresh proofs |
+| False PR claims | Default branch, independent merger, bound author, creation-to-deadline merge window and immutable commit closing line before LLM | Numeric ids can collude; current default branch can change |
 | Mutable external evidence | Creation snapshot, strict fact consensus, raw diff SHA-256 across blocks | GitHub edits may prevent consensus; patch-diff stability is not guaranteed |
-| Prompt injection | Bound inputs, escape closing tags (case-insensitive), explicit untrusted data, independent judge | Models may still be manipulated; consensus is not a security proof |
+| Prompt injection / PR edits | Exclude PR title/body; strip controls, escape all angles, JSON encode data; sponsor criteria remain inspection targets | Models may still be manipulated; consensus is not a security proof |
 | Truncated diff | Only first 12,000 chars considered, flag truncation and treat missing evidence as unmet | Use small focused PRs; full downloads have no contract-side byte cap |
 | Schema manipulation | Require complete unique ids, actual booleans after normalization, bounded integer score | LLM quality and scoring calibration require live measurement |
-| Incorrect validator vote | Rerun LLM and diff, compare decision, scores ±2 and reject Hamming distance ≤1 | Direct tests replay callbacks without full VM isolation |
-| Duplicate payout | Terminal bounty state, clear credit before external message | Finality/appeals and external-message execution are protocol dependencies |
-| External transfer failure | Pull payment separated from judge, empty EOA transfer calldata | No automatic restoration or recovery method; a failed finalized child transfer can strand value. Verify fees and delivery on Bradbury before funding use |
+| Incorrect validator vote | Rerun LLM/diff, compare decision, scores ±2 and reject Hamming distance ≤1 | Test-only Sandbox adapter has different error conversion and lacks isolation; real committee tests remain unexecuted |
+| Duplicate payout / premature withdrawal | Terminal bounty, awarded_at, seven-day aggregate credit hold, clear credit before transfer | Delay is local policy; appeal/reversal semantics remain unverified |
+| External transfer failure | Caller-selected EOA via withdraw_to; restore synchronous emission failures; empty calldata | Deferred child failures may strand funds without recovery. Verify failure, delivery, fees and appeal rollback on Bradbury before production funding |
 | GitHub rate limit/outage | Minimal requests, User-Agent, fixed transient errors | Shared validator IP may exhaust unauthenticated 60/hour limits |
-| Attempt-limit bypass | Limit per wallet/bounty | Github identity can migrate between wallets; not a Sybil prevention mechanism |
-| Invalid network or key exposure | Deployment script verifies chain 4221 before decrypting dedicated keystore; passwords outside git | Build environment must protect its keystore; never use mainnet or real funds |
+| Attempt bypass / LLM resampling | Counter per GitHub id/bounty across migration; persisted judged bounty/PR/diff keys | Multiple GitHub accounts remain possible; infrastructure/schema failures intentionally remain retriable |
+| Invalid network, keys or cache poisoning | Chain 4221 before dedicated-keystore decryption; smoke/mock suites guard loopback localnet; user-owned private mode-0700 caches | Protect the keystore; never use mainnet or real funds |
 
 Protocol fees are separate from the bounty value. Fee budgets must include external-message allocations when required. Depositing fees is not adding bounty funds. Do not mark settlement delivered from ACCEPTED status alone: check successful execution, finalization and the recipient's balance.
 

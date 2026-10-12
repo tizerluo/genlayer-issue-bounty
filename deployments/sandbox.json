@@ -9,5 +9,7 @@
   "complete_pr_url": "https://github.com/tizerluo/bounty-sandbox/pull/3",
   "deployer_gist": "https://gist.github.com/tizerluo/e6b1878333f2612ef1a822edbd1590b1",
   "checked_at": "2026-10-12",
-  "note": "Both PRs merged; issue reopened for create_bounty snapshot. Gist proves dedicated Bradbury deployer, not a local Studio default account."
+  "claim_evidence_status": "obsolete_requires_fresh_post_creation_independent_merge",
+  "binding_evidence_status": "obsolete_requires_contract_scoped_nonce_marker",
+  "note": "Historical PRs #2/#3 predate any new bounty and do not prove eligibility under review round 1. After creating a bounty, prepare fresh partial/complete PRs and have another GitHub id merge them into the default branch with an affirmative Fixes #1 line in each immutable merge commit. Update selectors and set claim_evidence_status to ready_after_creation only after verifying those facts. The old address-only gist is invalid; publish a marker scoped to the deployed contract, caller and current nonce. No new eligible demo or deployment is claimed."
 }

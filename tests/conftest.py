@@ -1,10 +1,18 @@
 """仅把官方 SDK 下载缓存移到可写目录。"""
-from pathlib import Path
 from gltest.direct import sdk_loader
 import pytest
+from scripts.cache_paths import private_cache
 
 # 0.29.2 的清理逻辑用路径子串识别 SDK，因此保留 gltest-direct。
-sdk_loader.CACHE_DIR = Path('/tmp/issue-bounty-gltest-direct')
+sdk_loader.CACHE_DIR = private_cache('gltest-direct')
+
+@pytest.fixture
+def direct_deploy(direct_deploy):
+    """使用与 Depends 探针一致的官方版本，不依赖共享缓存或 latest。"""
+    def deploy(*args, **kwargs):
+        kwargs.setdefault('sdk_version', 'v0.2.12')
+        return direct_deploy(*args, **kwargs)
+    return deploy
 
 @pytest.fixture
 def replay_validator(direct_vm, monkeypatch):
