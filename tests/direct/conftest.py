@@ -16,3 +16,11 @@ def escrow(direct_deploy, direct_vm):
     from genlayer import Address
     direct_vm.sender = Address(direct_vm.sender)
     return contract
+
+@pytest.fixture
+def ready(escrow, direct_vm):
+    from tests.helpers import bind, create
+    bind(direct_vm, escrow)
+    create(direct_vm, escrow, value=123)
+    direct_vm.clear_mocks()
+    return escrow
