@@ -2,9 +2,9 @@
   "chain_id": 4221,
   "rpc": "https://rpc-bradbury.genlayer.com",
   "deployer": "0x8f374a83965b2143bea962a48c8dacaf0db62d16",
-  "status": "package_not_deployed",
-  "package_deploy_tx": null,
-  "package_contract": null,
+  "status": "deployed",
+  "package_deploy_tx": "0xe0499895930368ed845a02117a283b0c889481808337b4882673baf4d545038f",
+  "package_contract": "0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48",
   "package_sha256": "a8e13eaca72e07e73d7868ca8cfc1bf2d69c1d011d5eead9da7878f7802223c8",
   "package_path": "artifacts/issue_bounty_escrow.zip",
   "constructor_args": [
@@ -38,5 +38,21 @@
     },
     "deployed_at": "2026-10-12",
     "status": "legacy minified deployment (superseded)"
-  }
+  },
+  "package_constructor_args": [
+    259200,
+    3,
+    "0x8f374a83965b2143bea962a48c8dacaf0db62d16"
+  ],
+  "package_onchain_code_verified": true,
+  "explorer": "https://explorer-bradbury.genlayer.com/address/0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48",
+  "package_demo_bounty": {
+    "id": 0,
+    "create_tx": "0xa877c23575b9a4723dac6b625d9bf7035ae98d84e1e21acce92b8d429395c863",
+    "repo": "tizerluo/bounty-sandbox",
+    "issue": 1,
+    "reward_wei": 100000000000000,
+    "status": "OPEN"
+  },
+  "legacy_minified_contract": "0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE (superseded)"
 }

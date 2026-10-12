@@ -4,11 +4,7 @@
 
 GitHub issue bounties escrowed and judged by GenLayer intelligent-contract consensus. Sponsors define acceptance criteria; developers prove GitHub identity, submit merged PRs, and withdraw rewards after independent AI review.
 
-**Deployment status:** **legacy minified deployment (superseded)**:
-[`0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE`](https://explorer-bradbury.genlayer.com/address/0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE),
-with demo bounty #0 funded with 0.0001 test GEN. The readable redeploy candidate
-has **not** been deployed. See [deployment record](deployments/bradbury.json)
-and [progress](progress.md#review-round-3). Testnet only.
+**Deployment status:** readable package deployed on Bradbury at [`0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48`](https://explorer-bradbury.genlayer.com/address/0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48) (tx `0xe0499895…038f`, on-chain code SHA-256 `a8e13eac…23c8` verified with `scripts/verify_onchain_code.py`). Demo bounty #0 (0.0001 test GEN, tizerluo/bounty-sandbox#1) tx `0xa877c235…c863`. The earlier minified deployment `0xAEDd…40DE` is superseded.
 
 The [contract source](contracts/issue_bounty_escrow.py) uses descriptive names,
 normal formatting and public method docstrings. A stored ZIP

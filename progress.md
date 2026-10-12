@@ -315,3 +315,7 @@ Validation and candidate identity:
   artifacts, tests, documentation and tooling are committed/pushed through
   `GIT_DIR=/home/box/.genlayer/issue-bounty-git`, after `git pull --rebase` in a
   temporary clean tree that preserves the preexisting local workflow change.
+
+## Readable package redeploy (2026-10-12 ~15:25 ET)
+- Deployed exact bytes of artifacts/issue_bounty_escrow.zip (sha256 a8e13eac…23c8) via genlayer-js: contract 0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48, tx 0xe0499895930368ed845a02117a283b0c889481808337b4882673baf4d545038f, FINISHED_WITH_RETURN. scripts/verify_onchain_code.py: verified=true.
+- Demo bounty #0 recreated: tx 0xa877c23575b9a4723dac6b625d9bf7035ae98d84e1e21acce92b8d429395c863, status OPEN.
