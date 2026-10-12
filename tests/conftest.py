@@ -3,7 +3,8 @@ from pathlib import Path
 from gltest.direct import sdk_loader
 import pytest
 
-sdk_loader.CACHE_DIR = Path('/tmp/issue-bounty-genvm')
+# 0.29.2 的清理逻辑用路径子串识别 SDK，因此保留 gltest-direct。
+sdk_loader.CACHE_DIR = Path('/tmp/issue-bounty-gltest-direct')
 
 @pytest.fixture
 def replay_validator(direct_vm, monkeypatch):
