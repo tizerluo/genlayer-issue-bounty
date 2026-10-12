@@ -152,3 +152,6 @@ Implementation and verification notes:
 - Final validation: `ISSUE_BOUNTY_CACHE_DIR=/home/box/.genlayer/issue-bounty-cache .venv/bin/pytest tests/direct tests/experiments -q`: **147 passed**. Official `check ... --json`: **passed**, 20 public methods (14 views, 6 writes), six events. `typecheck`: **no type errors**. Regenerated `artifacts/abi.json` with the official schema command.
 - `ISSUE_BOUNTY_STUDIO_TESTS=1 .venv/bin/gltest tests/integration -q --network localnet`: **11 skipped**, local Studio unavailable. No native sandbox/committee, real-model or protocol-finality validation is claimed. Existing README limitation expanded as specifically requested for finding 12.
 - CI definition updated only at `docs/ci.yml` with pinned GenVM and typecheck. The preexisting untracked `.github/` is excluded from the commit; no workflow-scope write is attempted. Review source/docs use external Git metadata and are committed/pushed to main after final checks.
+
+## Review round 2 (Cursor Agent, claude-opus-5-5-high, 2026-10-12)
+Findings 1–7, 9–13 RESOLVED; #8 PARTIAL (no recovery path for failed async transfer; 7-day lock not aligned to measured appeal window; must test on Bradbury). LOW residuals: U+2028/2029 not filtered; issue-ref regex rejects `* Fixes #12`, CRLF, `Fixes #12, #13`, full URLs; no trusted-merger allowlist. No new CRITICAL/HIGH.

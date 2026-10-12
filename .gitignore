@@ -27,3 +27,4 @@ artifacts/tmp/
 codex_prompt.txt
 node_modules/
 .studio/
+logs/
