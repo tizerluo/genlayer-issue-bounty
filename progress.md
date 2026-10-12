@@ -197,3 +197,9 @@ Findings 1–7, 9–13 RESOLVED; #8 PARTIAL (no recovery path for failed async t
   preexisting local workflow differs from the remote version and is left
   untouched and unstaged. This commit has no `.github/workflows` changes.
   No secrets are printed. No new gas estimate or network deployment is claimed.
+
+## Bradbury deployment (2026-10-12 ~13:50 ET)
+- Funded deployer with 20 test GEN from box testnet wallet 0xD21a…Aec6 (which received the faucet claim); tx 0xa16edba9c86ce5ecf25944ebc92e7144f5a0ab802b05be0f626515b03bf09990.
+- First deploy of the 31 KB source failed: eth_estimateGas 25.35M -> RPC "gas limit too high". After size reduction (17.8 KB) estimate 15.15M; deployed with genlayer CLI 0.39.2 (no --fees needed): contract 0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE, tx 0xc0599aca42eccf1c2808635b6e164169a425daf86464396a6fb092b5dba2d3a4, FINISHED_WITH_RETURN.
+- Demo bounty #0 (0.0001 test GEN, tizerluo/bounty-sandbox#1) created via genlayer-js writeContract with value (CLI write has no value flag — item 13; genlayer-py 0.19.0rc2 estimateGas reverts): tx 0xcbb71f1a1919202b69f0e8fb6af8b2328e25493f0828f90d269f5d75c1143efb, FINISHED_WITH_RETURN, get_bounty(0) status OPEN.
+- Not yet done: bind_github / submit_claim / withdraw live flow (needs fresh post-creation PR merged by a different GitHub id).

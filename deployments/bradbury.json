@@ -6,9 +6,27 @@
   "address": null,
   "explorer_url": null,
   "demo_txs": [],
-  "status": "blocked",
+  "status": "deployed",
   "blockers": [
     "Official faucet requires GitHub sign-in and Turnstile; deployer balance is zero",
     "FeeManager quoteGasPrice reverted with RC tooling; current fee profile unverified"
-  ]
+  ],
+  "contract": "0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE",
+  "explorer": "https://explorer-bradbury.genlayer.com/address/0xAEDd265fCE73a9e50e8CcF6a72d78687fc4040DE",
+  "deploy_tx": "0xc0599aca42eccf1c2808635b6e164169a425daf86464396a6fb092b5dba2d3a4",
+  "constructor_args": [
+    259200,
+    3
+  ],
+  "demo_bounty": {
+    "id": 0,
+    "create_tx": "0xcbb71f1a1919202b69f0e8fb6af8b2328e25493f0828f90d269f5d75c1143efb",
+    "repo": "tizerluo/bounty-sandbox",
+    "issue": 1,
+    "reward_wei": 100000000000000,
+    "min_score": 7,
+    "status": "OPEN",
+    "result": "FINISHED_WITH_RETURN"
+  },
+  "deployed_at": "2026-10-12"
 }
