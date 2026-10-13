@@ -4,14 +4,16 @@
 
 GitHub issue bounties escrowed and judged by GenLayer intelligent-contract consensus. Sponsors define acceptance criteria; developers prove GitHub identity, submit merged PRs, and withdraw rewards after independent AI review.
 
-**Deployment status:** readable package deployed on Bradbury at [`0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48`](https://explorer-bradbury.genlayer.com/address/0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48) (tx `0xe0499895…038f`, on-chain code SHA-256 `a8e13eac…23c8` verified with `scripts/verify_onchain_code.py`). Demo bounty #0 (0.0001 test GEN, tizerluo/bounty-sandbox#1) tx `0xa877c235…c863`. The earlier minified deployment `0xAEDd…40DE` is superseded.
+**Deployment status:** the currently deployed readable package on Bradbury is [`0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48`](https://explorer-bradbury.genlayer.com/address/0x33bEC323A9454B6fBf16616C9ba12300a2a1bC48) (tx `0xe0499895…038f`, on-chain code SHA-256 `a8e13eac…23c8` verified with `scripts/verify_onchain_code.py`). It does **not** include the wallet address and claim issue linking fixes described below. The current source and rebuilt package are a **pending deployment candidate**; they have not been deployed. Demo bounty #0 (0.0001 test GEN, tizerluo/bounty-sandbox#1) tx `0xa877c235…c863` belongs to the deployed version. The earlier minified deployment `0xAEDd…40DE` is superseded.
 
 The [contract source](contracts/issue_bounty_escrow.py) uses descriptive names,
 normal formatting and public method docstrings. A stored ZIP
 packages its exact source as a zlib payload with a checksum-verified Python
 loader. Semantic verification tolerates compressor differences; deployment
-verification pins the exact artifact hash. The readable source is **38,410 bytes**; the deployment package is
-**11,122 bytes**, estimated at **9,674,026 gas** on Bradbury (target <15.5M).
+verification pins the exact artifact hash. The pending candidate's readable source is
+**39,411 bytes**; its deployment package is **11,397 bytes**. The historical
+Bradbury estimate of **9,674,026 gas** (target <15.5M) applies to the deployed
+**11,122-byte** package (`a8e13eac…23c8`); the candidate has no gas estimate yet.
 Upload package bytes for redeployment; a raw Python upload still exceeds the cap.
 Review round 3 adds a fixed treasury constructor argument, optional trusted
 merger IDs, and a surplus sweep. Use the updated ABI for a fresh deployment.
@@ -49,7 +51,7 @@ flowchart LR
     I --> J
 ```
 
-Each accepted claim must belong to the bound numeric GitHub id and be merged between bounty creation and its deadline into the default branch by another GitHub id. Issue association requires an affirmative closing line in the immutable merge commit message or an issue `closed` event whose `commit_id` equals that exact merge SHA. Squash bullets (`* Fixes #12` or `- Fixes #12`), CRLF and comma lists (`Fixes #12, #13`) work. For merge commits that omit PR text, GitHub must record the SHA-matched closure event, or the merger must include a closing line in the commit message. Editing the PR title/body cannot establish eligibility. Failed business claims are recorded for audit; transient infrastructure errors leave state untouched. Zero-value reputation bounties are supported alongside funded bounties.
+In the pending candidate, each accepted claim must belong to the bound numeric GitHub id and be merged between bounty creation and its deadline into the default branch by another GitHub id. Issue association accepts an affirmative closing reference anywhere in the immutable merge commit message or claim-time PR title/body, or an issue `closed` event whose `commit_id` equals that exact merge SHA. Local references (`Fixes #12`), repository-qualified references (`Fixes owner/project#12`), full GitHub issue URLs, optional colons, squash bullets, CRLF and comma lists work. Hyphen-prefixed keywords, leading-zero numbers, decimals and ranges do not link issues. Non-string titles/bodies and malformed reference tokens contribute no linking evidence. PR titles/bodies can establish linking at claim time, including after edits; the judge evaluates implementation from the diff alone. Failed business claims are recorded for audit; transient infrastructure errors leave state untouched. Zero-value reputation bounties are supported alongside funded bounties.
 
 ## Consensus
 
@@ -104,7 +106,7 @@ python scripts/check.py typecheck contracts/issue_bounty_escrow.py
 pytest tests/direct tests/experiments -v -W error::RuntimeWarning
 ```
 
-The cache wrapper runs the official GenVM linter/semantic validator without suppressing rules. Caches live in a user-owned mode-0700 directory under `~/.cache/issue-bounty`, with a fresh private temporary directory if HOME is read-only. Ownership, permissions and symlinks are checked before loading code. A persistent private cache can be selected with `ISSUE_BOUNTY_CACHE_DIR`; this workspace uses `/home/box/.genlayer/issue-bounty-cache`. Set `GENVM_VERSION=v0.2.12` for lint/typecheck; direct tests pin that same release explicitly. Tests use the actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **214 passed**, including deployment hash guards, honest merge formats, trusted mergers, surplus protection and semantic package checks.
+The cache wrapper runs the official GenVM linter/semantic validator without suppressing rules. Caches live in a user-owned mode-0700 directory under `~/.cache/issue-bounty`, with a fresh private temporary directory if HOME is read-only. Ownership, permissions and symlinks are checked before loading code. A persistent private cache can be selected with `ISSUE_BOUNTY_CACHE_DIR`; this workspace uses `/home/box/.genlayer/issue-bounty-cache`. Set `GENVM_VERSION=v0.2.12` for lint/typecheck; direct tests pin that same release explicitly. Tests use the actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **371 passed**, including deployment hash guards, honest merge formats, trusted mergers, surplus protection and semantic package checks.
 The complete suite also passes against the shipped loader with
 `ISSUE_BOUNTY_TEST_PACKAGE=1`. SDK lint, semantic validation and typecheck pass;
 the generated ABI matches [artifacts/abi.json](artifacts/abi.json) exactly.

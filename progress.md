@@ -352,3 +352,17 @@ Validation and candidate identity:
   constructor/schema and temporary child-VM loader probes pass in local GenVM.
 - Local fix branch only; no deployment, push, network writes, or real wallet/key
   access. The rebuilt ZIP is a new deployment candidate.
+
+## Reviewer follow-up (2026-10-13)
+
+- ASCII case folding now rejects Unicode URL/keyword lookalikes; Unicode word
+  boundaries remain intact. Malformed/oversized tokens and non-string PR prose
+  are ignored. Regressions cover later valid tokens, hyphen prefixes, leading
+  zeros, decimals/ranges, and valid sentence-ending periods.
+- README distinguishes deployed `a8e13eac…23c8` from the pending candidate.
+- All four required CI commands pass: SDK check/typecheck and **371 passed** in
+  each source/package mode, with RuntimeWarnings fatal.
+- Rebuilt ZIP/manifest with `scripts/build_contract_package.py`: **11,397 bytes**,
+  SHA-256 `52a2e21424caf686a5640fd67393ebc8aef756e942afd29f3216ce9a831173a7`.
+  Regenerated ABI (unchanged) and refreshed local GenVM runtime evidence.
+- Local commit only; no deployment, push, network writes, or real keys accessed.

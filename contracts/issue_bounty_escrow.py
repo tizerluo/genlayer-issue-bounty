@@ -181,24 +181,32 @@ def _diff(url: str) -> tuple[str, str]:
 
 
 def _references_issue(text: str, repo: str, issue: int) -> bool:
+    if not isinstance(text, str):
+        return False
+    # Fold GitHub syntax as ASCII while keeping word boundaries Unicode-aware.
     reference = (
-        r"(?:https://github\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+/issues/[0-9]+"
-        r"|(?:[A-Za-z0-9-]+/[A-Za-z0-9._-]+)?#[0-9]+)(?![\w/#])"
+        r"(?:https://github\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+/issues/[1-9][0-9]*"
+        r"|(?:[A-Za-z0-9-]+/[A-Za-z0-9._-]+)?#[1-9][0-9]*)(?u:(?![\w/#-]|\.\d))"
     )
     pattern = (
-        r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b"
+        r"(?u:(?<![\w-]))(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b"
         r"(?:[ \t]+:?[ \t]*|:[ \t]*)(" + reference
         + r"(?:[ \t]*,[ \t]*" + reference + r")*)"
     )
     # Closing references in commit messages or claim-time PR prose establish linking only.
-    for match in re.finditer(pattern, text, re.IGNORECASE):
+    for match in re.finditer(pattern, text, re.IGNORECASE | re.ASCII):
         for token in match.group(1).split(","):
             token = token.strip().lower()
-            if token.startswith("https://github.com/"):
-                referenced_repo, number = token.removeprefix("https://github.com/").rsplit("/issues/", 1)
-            else:
-                referenced_repo, number = token.split("#")
-            if referenced_repo in ("", repo.lower()) and int(number) == issue:
+            try:
+                if token.startswith("https://github.com/"):
+                    referenced_repo, number = token.removeprefix("https://github.com/").rsplit("/issues/", 1)
+                else:
+                    referenced_repo, number = token.split("#")
+                referenced_issue = int(number)
+            except (ValueError, TypeError):
+                # Malformed tokens (including oversized integers) cannot establish linking.
+                continue
+            if referenced_repo in ("", repo.lower()) and referenced_issue == issue:
                 return True
     return False
 
@@ -275,7 +283,7 @@ def _fetch_facts(repo: str, issue: int, pull_number: int, diff_url: str) -> str:
             _error("BAD_MERGE_COMMIT", "EXTERNAL")
         facts["references_issue"] = any(
             _references_issue(text, repo, issue)
-            for text in (message, data.get("title") or "", data.get("body") or "")
+            for text in (message, data.get("title"), data.get("body"))
         ) or _closed_by_commit(
             repo, issue, commit_hash
         )

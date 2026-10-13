@@ -33,6 +33,7 @@ def test_each_linking_source_reaches_judging(ready, direct_vm, source, message):
 ])
 @pytest.mark.parametrize('reference', [
     '#1', 'OwNeR/PrOjEcT#1', 'https://github.com/OWNER/PROJECT/issues/1',
+    '#1.', 'owner/project#1.', 'https://github.com/owner/project/issues/1.',
 ])
 def test_closing_keywords_and_reference_formats(escrow, keyword, reference):
     module = importlib.import_module('_contract_issue_bounty_escrow')
@@ -42,6 +43,7 @@ def test_closing_keywords_and_reference_formats(escrow, keyword, reference):
 
 
 @pytest.mark.parametrize('message', [
+    'Fixes #1.',
     'Fixes #2, #1',
     '* Fixes owner/project#2, OWNER/PROJECT#1.\r\n',
     'Fixes https://github.com/owner/project/issues/2, #1',
@@ -54,7 +56,7 @@ def test_comma_list_finds_exact_issue(escrow, message):
 
 @pytest.mark.parametrize('message', [
     'Fixes #2', 'Fixes #12', 'Fixes #21', 'Fixes #11',
-    'Fixes #1suffix', 'Fixes #1_2', 'Fixes #1/2',
+    'Fixes #1suffix', 'Fixes #1_2', 'Fixes #1/2', 'Fixes #1é', 'Fixes #1ſuffix',
     'Fixes other/project#1', 'Fixes owner/other#1',
     'Fixes https://github.com/other/project/issues/1',
     'Fixes https://github.com/owner/other/issues/1',
@@ -63,13 +65,62 @@ def test_comma_list_finds_exact_issue(escrow, message):
     'Fixes https://github.com/owner/project/issues/1suffix',
     'Fixes https://github.com/owner/project/issues/1/2',
     'Fixes https://github.com.evil/owner/project/issues/1',
-    'prefixes #1', 'unresolved #1', 'fixess #1',
+    'prefixes #1', 'préfixes #1', 'unresolved #1', 'fixess #1', 'pre-fixes #1', 'un-fixed #1',
     '#1', 'owner/project#1', 'https://github.com/owner/project/issues/1',
     'Mentions #1 in passing', 'Fixes #2, other/project#1', '',
 ])
 def test_reference_boundaries_and_wrong_targets(escrow, message):
     module = importlib.import_module('_contract_issue_bounty_escrow')
     assert not module._references_issue(message, 'owner/project', 1)
+
+
+@pytest.mark.parametrize('reference', [
+    '#01', '#1.5', '#1.٥', '#1-2',
+    'owner/project#01', 'owner/project#1.5', 'owner/project#1-2',
+    'https://github.com/owner/project/issues/01',
+    'https://github.com/owner/project/issues/1.5',
+    'https://github.com/owner/project/issues/1-2',
+])
+def test_noncanonical_issue_numbers_do_not_link(escrow, reference):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    assert not module._references_issue(f'Fixes {reference}', 'owner/project', 1)
+
+
+@pytest.mark.parametrize('message', [
+    'Fixes httpſ://github.com/owner/project/issues/1',
+    'Fixes https://gıthub.com/owner/project/issues/1',
+    'Fixes https://gİthub.com/owner/project/issues/1',
+    'Fixes https://github.com/owner/project/iſſues/1',
+    'reſolves #1',
+    'Fixes #' + '9' * 5000,
+])
+def test_bad_reference_tokens_are_ignored(escrow, message):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    assert not module._references_issue(message, 'owner/project', 1)
+    assert module._references_issue(f'{message}; Fixes #1', 'owner/project', 1)
+
+
+def test_bad_number_before_valid_comma_list_reference(escrow):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    assert module._references_issue('Fixes #' + '9' * 5000 + ', #1', 'owner/project', 1)
+
+
+@pytest.mark.parametrize('value', [None, True, 12, ['Fixes #12'], {'reference': 'Fixes #12'}])
+@pytest.mark.parametrize('source', ['title', 'body'])
+@pytest.mark.parametrize('has_valid_reference', [False, True])
+def test_non_string_pr_prose_contributes_no_reference(
+    ready, direct_vm, source, value, has_valid_reference,
+):
+    changes = {'title': 'Add addition', 'body': None}
+    changes[source] = value
+    pr(direct_vm, commit_message='Fixes #12' if has_valid_reference else 'Add addition',
+       **changes)
+    if has_valid_reference:
+        verdict(direct_vm)
+    ready.submit_claim(0, 34)
+    claim = ready.get_claim(0)
+    assert claim['reason'] == ('OK' if has_valid_reference else 'NO_ISSUE_REFERENCE')
+    assert claim['criteria_met'] == ([True, True] if has_valid_reference else [])
 
 
 def test_issue_url_with_repo_named_issues(escrow):
