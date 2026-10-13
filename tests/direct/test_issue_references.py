@@ -1,0 +1,201 @@
+"""Closing references link merged PRs to issues before diff-only judging."""
+import importlib
+from time import perf_counter
+
+import pytest
+
+from tests.helpers import pr, verdict
+
+
+@pytest.mark.parametrize('source', ['commit_message', 'title', 'body'])
+@pytest.mark.parametrize('message', [
+    'Implement addition\n\nFixes #12\n\nDocument usage',
+    'Implement addition (Fixes #12) and document usage',
+    'Documentation: cLoSeD: OwNeR/PrOjEcT#12 with usage examples',
+    'Resolves: https://github.com/owner/project/issues/12.',
+    'This fix RESOLVED HTTPS://GITHUB.COM/OWNER/PROJECT/issues/12!',
+    'Fixes #13, #12',
+    'Fixes other/project#12, https://github.com/owner/project/issues/12',
+])
+def test_each_linking_source_reaches_judging(ready, direct_vm, source, message):
+    changes = {'commit_message': 'Merge pull request #34 from alice/addition',
+               'title': 'Implement addition', 'body': None}
+    changes[source] = message
+    pr(direct_vm, **changes)
+    verdict(direct_vm)
+    ready.submit_claim(0, 34)
+    claim = ready.get_claim(0)
+    assert claim['status'] == 'ACCEPTED' and claim['reason'] == 'OK'
+    assert claim['criteria_met'] == [True, True] and claim['score'] == 9
+
+
+@pytest.mark.parametrize('keyword', [
+    'Fixes', 'Fixed', 'Fix', 'Closes', 'Closed', 'Close', 'Resolves', 'Resolved', 'Resolve',
+])
+@pytest.mark.parametrize('reference', [
+    '#1', 'OwNeR/PrOjEcT#1', 'https://github.com/OWNER/PROJECT/issues/1',
+    '#1.', 'owner/project#1.', 'https://github.com/owner/project/issues/1.',
+])
+def test_closing_keywords_and_reference_formats(escrow, keyword, reference):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    for separator in (' ', ': ', ':', ' \t: \t', '\t'):
+        message = f'An inline change {keyword.swapcase()}{separator}{reference} adds coverage.'
+        assert module._references_issue(message, 'OWNER/PROJECT', 1)
+
+
+@pytest.mark.parametrize('message', [
+    'Fixes #1.',
+    'Fixes #2, #1',
+    '* Fixes owner/project#2, OWNER/PROJECT#1.\r\n',
+    'Fixes https://github.com/owner/project/issues/2, #1',
+    'Fixes #2, https://github.com/owner/project/issues/1',
+])
+def test_comma_list_finds_exact_issue(escrow, message):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    assert module._references_issue(message, 'owner/project', 1)
+
+
+@pytest.mark.parametrize('message', [
+    'Fixes #2', 'Fixes #12', 'Fixes #21', 'Fixes #11',
+    'Fixes #1suffix', 'Fixes #1_2', 'Fixes #1/2', 'Fixes #1é', 'Fixes #1ſuffix',
+    'Fixes other/project#1', 'Fixes owner/other#1',
+    'Fixes https://github.com/other/project/issues/1',
+    'Fixes https://github.com/owner/other/issues/1',
+    'Fixes https://github.com/owner/project/issues/12',
+    'Fixes https://github.com/owner/project/issues/21',
+    'Fixes https://github.com/owner/project/issues/1suffix',
+    'Fixes https://github.com/owner/project/issues/1/2',
+    'Fixes https://github.com.evil/owner/project/issues/1',
+    'prefixes #1', 'préfixes #1', 'unresolved #1', 'fixess #1', 'pre-fixes #1', 'un-fixed #1',
+    'pre/fixes #1', '#fixes #1', '/Closes #1', '#Resolved #1',
+    '#1', 'owner/project#1', 'https://github.com/owner/project/issues/1',
+    'Mentions #1 in passing', 'Fixes #2, other/project#1', '',
+])
+def test_reference_boundaries_and_wrong_targets(escrow, message):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    assert not module._references_issue(message, 'owner/project', 1)
+
+
+@pytest.mark.parametrize('message', [
+    'Fixes' + ' ' * 65536 + 'x',
+    'Fixes' + '\t' * 65536 + 'x',
+    'Fixes' + ' ' * 65536 + ':' + '\t' * 65536 + 'x',
+    'Fixes #13,' + ' ' * 65536 + 'x',
+    'Fixes ' + 'a' * 65536 + '/#12',
+    'Fixes owner/' + 'a' * 65536 + 'x',
+    'Fixes https://github.com/owner/' + 'a' * 65536 + '/issues/x',
+    'Fixes #' + '1' * 65536 + 'x',
+], ids=['spaces', 'tabs', 'colon', 'comma', 'owner', 'repository', 'url', 'number'])
+def test_long_malformed_body_references_are_fast(ready, direct_vm, message):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    started = perf_counter()
+    assert module._references_issue(message, 'owner/project', 12) is False
+    assert perf_counter() - started < 1.0
+
+    pr(direct_vm, commit_message='Merge pull request #34 from alice/addition',
+       title='Add addition', body=message)
+    started = perf_counter()
+    ready.submit_claim(0, 34)
+    assert perf_counter() - started < 1.0
+    claim = ready.get_claim(0)
+    assert claim['reason'] == 'NO_ISSUE_REFERENCE' and claim['criteria_met'] == []
+
+
+@pytest.mark.parametrize('reference', [
+    '#01', '#1.5', '#1.٥', '#1-2',
+    'owner/project#01', 'owner/project#1.5', 'owner/project#1-2',
+    'https://github.com/owner/project/issues/01',
+    'https://github.com/owner/project/issues/1.5',
+    'https://github.com/owner/project/issues/1-2',
+])
+def test_noncanonical_issue_numbers_do_not_link(escrow, reference):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    assert not module._references_issue(f'Fixes {reference}', 'owner/project', 1)
+
+
+@pytest.mark.parametrize('message', [
+    'Fixes httpſ://github.com/owner/project/issues/1',
+    'Fixes https://gıthub.com/owner/project/issues/1',
+    'Fixes https://gİthub.com/owner/project/issues/1',
+    'Fixes https://github.com/owner/project/iſſues/1',
+    'reſolves #1',
+    'Fixes #' + '9' * 5000,
+])
+def test_bad_reference_tokens_are_ignored(escrow, message):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    assert not module._references_issue(message, 'owner/project', 1)
+    assert module._references_issue(f'{message}; Fixes #1', 'owner/project', 1)
+
+
+def test_bad_number_before_valid_comma_list_reference(escrow):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    assert module._references_issue('Fixes #' + '9' * 5000 + ', #1', 'owner/project', 1)
+
+
+@pytest.mark.parametrize('value', [None, True, 12, ['Fixes #12'], {'reference': 'Fixes #12'}])
+@pytest.mark.parametrize('source', ['title', 'body'])
+@pytest.mark.parametrize('has_valid_reference', [False, True])
+def test_non_string_pr_prose_contributes_no_reference(
+    ready, direct_vm, source, value, has_valid_reference,
+):
+    changes = {'title': 'Add addition', 'body': None}
+    changes[source] = value
+    pr(direct_vm, commit_message='Fixes #12' if has_valid_reference else 'Add addition',
+       **changes)
+    if has_valid_reference:
+        verdict(direct_vm)
+    ready.submit_claim(0, 34)
+    claim = ready.get_claim(0)
+    assert claim['reason'] == ('OK' if has_valid_reference else 'NO_ISSUE_REFERENCE')
+    assert claim['criteria_met'] == ([True, True] if has_valid_reference else [])
+
+
+def test_issue_url_with_repo_named_issues(escrow):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    assert module._references_issue('Fixes https://github.com/owner/issues/issues/1',
+                                    'owner/issues', 1)
+
+
+def test_null_body_without_reference_does_not_reach_judging(ready, direct_vm):
+    pr(direct_vm, commit_message='Merge pull request #34 from alice/addition\n\nAdd addition',
+       title='Add addition', body=None, events=[{'event': 'closed', 'commit_id': None}])
+    ready.submit_claim(0, 34)
+    claim = ready.get_claim(0)
+    assert claim['reason'] == 'NO_ISSUE_REFERENCE'
+    assert claim['criteria_met'] == [] and claim['score'] == 0
+
+
+def test_default_merge_with_body_only_reference_is_judged(ready, direct_vm, monkeypatch):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    pr(direct_vm, commit_message='Merge pull request #34 from alice/addition\n\nAdd addition',
+       title='Add addition', body='This implements addition. Fixes #12. BODY_ONLY_MARKER')
+    verdict(direct_vm, met=(False, True), score=8)
+    original = module.gl.nondet.exec_prompt
+    prompts = []
+
+    def judge(prompt, **kwargs):
+        prompts.append(prompt)
+        assert 'BODY_ONLY_MARKER' not in prompt
+        return original(prompt, **kwargs)
+
+    monkeypatch.setattr(module.gl.nondet, 'exec_prompt', judge)
+    ready.submit_claim(0, 34)
+    claim = ready.get_claim(0)
+    assert prompts
+    assert claim['status'] == 'REJECTED' and claim['reason'] == 'CRITERIA_NOT_MET'
+    assert claim['criteria_met'] == [False, True] and claim['score'] == 8
+    assert ready.get_bounty(0)['status'] == 'OPEN'
+    assert ready.get_claim_count(0, direct_vm.sender) == 1
+    assert ready.get_credit(direct_vm.sender) == 0
+
+
+@pytest.mark.parametrize('message', ['This does not fix #12.', "This doesn't resolve #12."])
+def test_negated_body_links_but_still_requires_diff_judgment(ready, direct_vm, message):
+    pr(direct_vm, commit_message='Merge pull request #34 from alice/addition',
+       title='Add addition', body=message)
+    verdict(direct_vm, met=(False, True), score=8)
+    ready.submit_claim(0, 34)
+    claim = ready.get_claim(0)
+    assert claim['reason'] == 'CRITERIA_NOT_MET' and claim['criteria_met'] == [False, True]
+    assert ready.get_bounty(0)['status'] == 'OPEN'
+    assert ready.get_credit(direct_vm.sender) == 0

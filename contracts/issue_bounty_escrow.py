@@ -60,6 +60,10 @@ def _canonical(obj: typing.Any) -> str:
     return json.dumps(obj, sort_keys=True, ensure_ascii=False)
 
 
+def _wallet_address(wallet: Address | str) -> Address:
+    return wallet if isinstance(wallet, Address) else Address(wallet)
+
+
 def _github_response(url: str, api: bool = True):
     headers = {"User-Agent": USER_AGENT}
     if api:
@@ -177,17 +181,33 @@ def _diff(url: str) -> tuple[str, str]:
 
 
 def _references_issue(text: str, repo: str, issue: int) -> bool:
-    reference = r"(?:[A-Za-z0-9-]+/[A-Za-z0-9._-]+)?#[0-9]+"
-    pattern = (
-        r"^[ \t]*(?:[*-][ \t]*)?(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)"
-        r"[ \t]*:?[ \t]+(" + reference + r"(?:[ \t]*,[ \t]*" + reference
-        + r")*)[ \t]*[.!]?[ \t]*\r?$"
+    if not isinstance(text, str):
+        return False
+    # Fold GitHub syntax as ASCII while keeping word boundaries Unicode-aware.
+    reference = (
+        r"(?:https://github\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+/issues/[1-9][0-9]*"
+        r"|(?:[A-Za-z0-9-]+/[A-Za-z0-9._-]+)?#[1-9][0-9]*)(?u:(?![\w/#-]|\.\d))"
     )
-    # Require an entire affirmative line; editable PR prose never establishes eligibility.
-    for match in re.finditer(pattern, text, re.IGNORECASE | re.MULTILINE):
+    pattern = (
+        r"(?u:(?<![\w/#-]))(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b"
+        # Required delimiters separate whitespace runs to avoid quadratic backtracking.
+        r"(?:[ \t]*:[ \t]*|[ \t]+)(" + reference
+        + r"(?:[ \t]*,[ \t]*" + reference + r")*)"
+    )
+    # Closing references in commit messages or claim-time PR prose establish linking only.
+    for match in re.finditer(pattern, text, re.IGNORECASE | re.ASCII):
         for token in match.group(1).split(","):
-            referenced_repo, number = token.strip().lower().split("#")
-            if referenced_repo in ("", repo) and int(number) == issue:
+            token = token.strip().lower()
+            try:
+                if token.startswith("https://github.com/"):
+                    referenced_repo, number = token.removeprefix("https://github.com/").rsplit("/issues/", 1)
+                else:
+                    referenced_repo, number = token.split("#")
+                referenced_issue = int(number)
+            except (ValueError, TypeError):
+                # Malformed tokens (including oversized integers) cannot establish linking.
+                continue
+            if referenced_repo in ("", repo.lower()) and referenced_issue == issue:
                 return True
     return False
 
@@ -262,7 +282,10 @@ def _fetch_facts(repo: str, issue: int, pull_number: int, diff_url: str) -> str:
                 _error("BAD_MERGE_COMMIT", "EXTERNAL")
         except (KeyError, TypeError):
             _error("BAD_MERGE_COMMIT", "EXTERNAL")
-        facts["references_issue"] = _references_issue(message, repo, issue) or _closed_by_commit(
+        facts["references_issue"] = any(
+            _references_issue(text, repo, issue)
+            for text in (message, data.get("title"), data.get("body"))
+        ) or _closed_by_commit(
             repo, issue, commit_hash
         )
         text, digest = _diff(diff_url)
@@ -816,11 +839,13 @@ class IssueBountyEscrow(gl.Contract):
         self._withdraw_to(gl.message.sender_address)
 
     @gl.public.write
-    def withdraw_to(self, recipient: str) -> None:
+    def withdraw_to(self, recipient: Address | str) -> None:
         """Request transfer of mature caller credit to a chosen address."""
-        if not re.fullmatch("0x[0-9a-fA-F]{40}", recipient):
+        if not isinstance(recipient, Address) and (
+            not isinstance(recipient, str) or not re.fullmatch("0x[0-9a-fA-F]{40}", recipient)
+        ):
             _error("INVALID_RECIPIENT")
-        address = Address(recipient)
+        address = _wallet_address(recipient)
         if address == Address(ZERO_ADDRESS) or address == gl.message.contract_address:
             _error("INVALID_RECIPIENT")
         self._withdraw_to(address)
@@ -944,9 +969,9 @@ class IssueBountyEscrow(gl.Contract):
         ]
 
     @gl.public.view
-    def get_github_binding(self, wallet: str) -> dict:
+    def get_github_binding(self, wallet: Address | str) -> dict:
         """Return the wallet GitHub binding."""
-        address = Address(wallet)
+        address = _wallet_address(wallet)
         return {
             "github_id": int(self.wallet_to_github_id.get(address, u64(0))),
             "login": self.wallet_to_github_login.get(address, ""),
@@ -958,9 +983,9 @@ class IssueBountyEscrow(gl.Contract):
         return self.github_id_to_wallet.get(str(github_id), Address(ZERO_ADDRESS)).as_hex
 
     @gl.public.view
-    def get_credit(self, wallet: str) -> int:
+    def get_credit(self, wallet: Address | str) -> int:
         """Return wallet credit."""
-        return int(self.credits.get(Address(wallet), u256(0)))
+        return int(self.credits.get(_wallet_address(wallet), u256(0)))
 
     @gl.public.view
     def get_accounting(self) -> dict:
@@ -974,10 +999,10 @@ class IssueBountyEscrow(gl.Contract):
         }
 
     @gl.public.view
-    def get_claim_count(self, bounty_id: int, wallet: str) -> int:
+    def get_claim_count(self, bounty_id: int, wallet: Address | str) -> int:
         """Return attempts for the wallet current GitHub id."""
         self._bounty(bounty_id)
-        github_id = int(self.wallet_to_github_id.get(Address(wallet), u64(0)))
+        github_id = int(self.wallet_to_github_id.get(_wallet_address(wallet), u64(0)))
         return self.get_claim_count_for_github_id(bounty_id, github_id)
 
     @gl.public.view
@@ -994,6 +1019,6 @@ class IssueBountyEscrow(gl.Contract):
         return int(self.bind_nonce.get(str(github_id), u64(0)))
 
     @gl.public.view
-    def get_credit_unlock_at(self, wallet: str) -> int:
+    def get_credit_unlock_at(self, wallet: Address | str) -> int:
         """Return the credit release time."""
-        return int(self.credit_unlock_at.get(Address(wallet), u64(0)))
+        return int(self.credit_unlock_at.get(_wallet_address(wallet), u64(0)))

@@ -66,7 +66,8 @@ def pr(vm, commit_message='Add addition\n\nFixes #12', diff_text=DIFF, events=No
         # Only register events for the fallback path; strict mocks require each URL be used.
         from importlib import import_module
         module = import_module('_contract_issue_bounty_escrow')
-        if not module._references_issue(commit_message, REPO, 12):
+        if not any(module._references_issue(text, REPO, 12)
+                   for text in (commit_message, obj.get('title') or '', obj.get('body') or '')):
             web(vm, EVENTS_URL, [] if events is None else events)
         if diff_text is not None:
             web(vm, DIFF_URL, diff_text)

@@ -142,7 +142,12 @@
         ],
         [
           "wallet",
-          "string"
+          {
+            "$or": [
+              "address",
+              "string"
+            ]
+          }
         ]
       ],
       "kwparams": {},
@@ -185,7 +190,12 @@
       "params": [
         [
           "wallet",
-          "string"
+          {
+            "$or": [
+              "address",
+              "string"
+            ]
+          }
         ]
       ],
       "kwparams": {},
@@ -196,7 +206,12 @@
       "params": [
         [
           "wallet",
-          "string"
+          {
+            "$or": [
+              "address",
+              "string"
+            ]
+          }
         ]
       ],
       "kwparams": {},
@@ -207,7 +222,12 @@
       "params": [
         [
           "wallet",
-          "string"
+          {
+            "$or": [
+              "address",
+              "string"
+            ]
+          }
         ]
       ],
       "kwparams": {},
@@ -271,7 +291,12 @@
       "params": [
         [
           "recipient",
-          "string"
+          {
+            "$or": [
+              "address",
+              "string"
+            ]
+          }
         ]
       ],
       "kwparams": {},

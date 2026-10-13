@@ -330,3 +330,56 @@ Validation and candidate identity:
 - Root cause: GitHub's merge-commit message is "Merge pull request #4 …\n\n<PR title>" (no PR body), and the issue's `closed` event from a PR merge has commit_id = null. So neither _references_issue nor _closed_by_commit can match. Live web fetches of PR/commit/events via GenVM on Bradbury worked and reached consensus (strict_eq).
 - Fix options: (a) accept `cross-referenced`/`closed` timeline evidence tied to the merged PR (timeline closed event's `source`/PR link, or GraphQL closingIssuesReferences locked at merge); (b) require squash merges (commit message includes PR body) and document it; (c) re-merge not possible for PR #4. Needs contract change + redeploy.
 - Second bug: view get_credit/get_credit_unlock_at crash (`TypeError: cannot convert 'Address' object to bytes`) when the CLI passes a 0x address (it's encoded as Address, then wrapped in Address() again). Fix: accept `Address | str`.
+
+## Live claim #0 fixes (2026-10-13)
+- All four wallet views accept `Address | str` through `_wallet_address`, avoiding
+  double construction while preserving genlayer-js string calls.
+- Closing keywords now link exact local, repository-qualified, or full-URL issues
+  anywhere in merge messages, claim-time PR titles, or nullable PR bodies,
+  case-insensitively and with optional colons/comma lists. Other gates and the
+  SHA-matched closure fallback are preserved; the judge still uses only the diff.
+- Direct regressions cover both wallet inputs, all reference sources/keywords,
+  exact boundaries/wrong targets/null bodies, and body-only default merges reaching
+  judging. Updated strict mocks and current reference-policy documentation.
+- Activated `.venv`, pinned `GENVM_VERSION=v0.2.12`: all four requested CI commands
+  passed (check `--json`, typecheck, direct/experiments **300 passed** in source
+  mode and **300 passed** with `ISSUE_BOUNTY_TEST_PACKAGE=1`, RuntimeWarnings fatal).
+- Rebuilt with `scripts/build_contract_package.py`: source **38,998 bytes**, SHA-256
+  `5daea8ed3c33b1272ae9e78327e4b765d2242f897342351ffede345b47b44b3a`;
+  ZIP **11,244 bytes**, SHA-256
+  `0adb5adfb744c9d6367e1e7161313b33b4ccd5661f37e5dcb7541816283f9283`.
+  Regenerated ABI and ran `scripts/verify_contract_package.py`: exact ZIP
+  constructor/schema and temporary child-VM loader probes pass in local GenVM.
+- Local fix branch only; no deployment, push, network writes, or real wallet/key
+  access. The rebuilt ZIP is a new deployment candidate.
+
+## Reviewer follow-up (2026-10-13)
+
+- ASCII case folding now rejects Unicode URL/keyword lookalikes; Unicode word
+  boundaries remain intact. Malformed/oversized tokens and non-string PR prose
+  are ignored. Regressions cover later valid tokens, hyphen prefixes, leading
+  zeros, decimals/ranges, and valid sentence-ending periods.
+- README distinguishes deployed `a8e13eac…23c8` from the pending candidate.
+- All four required CI commands pass: SDK check/typecheck and **371 passed** in
+  each source/package mode, with RuntimeWarnings fatal.
+- Rebuilt ZIP/manifest with `scripts/build_contract_package.py`: **11,397 bytes**,
+  SHA-256 `52a2e21424caf686a5640fd67393ebc8aef756e942afd29f3216ce9a831173a7`.
+  Regenerated ABI (unchanged) and refreshed local GenVM runtime evidence.
+- Local commit only; no deployment, push, network writes, or real keys accessed.
+
+## Round 3 reviewer fixes (2026-10-13)
+
+- Removed overlapping separator whitespace quantifiers and audited the remaining
+  delimiter-separated reference/list runs. `/` and `#` keyword prefixes are rejected.
+  Eight malformed 65,536-character-run cases return false and reject PR bodies
+  within one second in both source/package tests. Documented negated linking and
+  verified that diff-only judgment still gates acceptance.
+- `withdraw_to` accepts `Address | str`; both inputs cover caller credit, finality,
+  zero/escrow recipients and transfer destination. Regenerated the SDK ABI.
+- All four CI commands pass with GenVM v0.2.12: check `--json`, typecheck and
+  **394 passed** in each source/package suite, with RuntimeWarnings fatal.
+- Rebuilt ZIP/manifest (**11,459 bytes**, SHA-256
+  `5f8f8e439202f7a50f7e9287c08e8a86b01c20ce242426327633202d7491d971`)
+  and refreshed local GenVM constructor/schema/child-loader evidence.
+- Local commit only; no deployment, push, network writes, keys or forbidden
+  directory reads.
