@@ -1,5 +1,6 @@
 """Closing references link merged PRs to issues before diff-only judging."""
 import importlib
+from time import perf_counter
 
 import pytest
 
@@ -37,7 +38,7 @@ def test_each_linking_source_reaches_judging(ready, direct_vm, source, message):
 ])
 def test_closing_keywords_and_reference_formats(escrow, keyword, reference):
     module = importlib.import_module('_contract_issue_bounty_escrow')
-    for separator in (' ', ': ', ':'):
+    for separator in (' ', ': ', ':', ' \t: \t', '\t'):
         message = f'An inline change {keyword.swapcase()}{separator}{reference} adds coverage.'
         assert module._references_issue(message, 'OWNER/PROJECT', 1)
 
@@ -66,12 +67,38 @@ def test_comma_list_finds_exact_issue(escrow, message):
     'Fixes https://github.com/owner/project/issues/1/2',
     'Fixes https://github.com.evil/owner/project/issues/1',
     'prefixes #1', 'préfixes #1', 'unresolved #1', 'fixess #1', 'pre-fixes #1', 'un-fixed #1',
+    'pre/fixes #1', '#fixes #1', '/Closes #1', '#Resolved #1',
     '#1', 'owner/project#1', 'https://github.com/owner/project/issues/1',
     'Mentions #1 in passing', 'Fixes #2, other/project#1', '',
 ])
 def test_reference_boundaries_and_wrong_targets(escrow, message):
     module = importlib.import_module('_contract_issue_bounty_escrow')
     assert not module._references_issue(message, 'owner/project', 1)
+
+
+@pytest.mark.parametrize('message', [
+    'Fixes' + ' ' * 65536 + 'x',
+    'Fixes' + '\t' * 65536 + 'x',
+    'Fixes' + ' ' * 65536 + ':' + '\t' * 65536 + 'x',
+    'Fixes #13,' + ' ' * 65536 + 'x',
+    'Fixes ' + 'a' * 65536 + '/#12',
+    'Fixes owner/' + 'a' * 65536 + 'x',
+    'Fixes https://github.com/owner/' + 'a' * 65536 + '/issues/x',
+    'Fixes #' + '1' * 65536 + 'x',
+], ids=['spaces', 'tabs', 'colon', 'comma', 'owner', 'repository', 'url', 'number'])
+def test_long_malformed_body_references_are_fast(ready, direct_vm, message):
+    module = importlib.import_module('_contract_issue_bounty_escrow')
+    started = perf_counter()
+    assert module._references_issue(message, 'owner/project', 12) is False
+    assert perf_counter() - started < 1.0
+
+    pr(direct_vm, commit_message='Merge pull request #34 from alice/addition',
+       title='Add addition', body=message)
+    started = perf_counter()
+    ready.submit_claim(0, 34)
+    assert perf_counter() - started < 1.0
+    claim = ready.get_claim(0)
+    assert claim['reason'] == 'NO_ISSUE_REFERENCE' and claim['criteria_met'] == []
 
 
 @pytest.mark.parametrize('reference', [
@@ -159,4 +186,16 @@ def test_default_merge_with_body_only_reference_is_judged(ready, direct_vm, monk
     assert claim['criteria_met'] == [False, True] and claim['score'] == 8
     assert ready.get_bounty(0)['status'] == 'OPEN'
     assert ready.get_claim_count(0, direct_vm.sender) == 1
+    assert ready.get_credit(direct_vm.sender) == 0
+
+
+@pytest.mark.parametrize('message', ['This does not fix #12.', "This doesn't resolve #12."])
+def test_negated_body_links_but_still_requires_diff_judgment(ready, direct_vm, message):
+    pr(direct_vm, commit_message='Merge pull request #34 from alice/addition',
+       title='Add addition', body=message)
+    verdict(direct_vm, met=(False, True), score=8)
+    ready.submit_claim(0, 34)
+    claim = ready.get_claim(0)
+    assert claim['reason'] == 'CRITERIA_NOT_MET' and claim['criteria_met'] == [False, True]
+    assert ready.get_bounty(0)['status'] == 'OPEN'
     assert ready.get_credit(direct_vm.sender) == 0

@@ -189,8 +189,9 @@ def _references_issue(text: str, repo: str, issue: int) -> bool:
         r"|(?:[A-Za-z0-9-]+/[A-Za-z0-9._-]+)?#[1-9][0-9]*)(?u:(?![\w/#-]|\.\d))"
     )
     pattern = (
-        r"(?u:(?<![\w-]))(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b"
-        r"(?:[ \t]+:?[ \t]*|:[ \t]*)(" + reference
+        r"(?u:(?<![\w/#-]))(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b"
+        # Required delimiters separate whitespace runs to avoid quadratic backtracking.
+        r"(?:[ \t]*:[ \t]*|[ \t]+)(" + reference
         + r"(?:[ \t]*,[ \t]*" + reference + r")*)"
     )
     # Closing references in commit messages or claim-time PR prose establish linking only.
@@ -838,11 +839,13 @@ class IssueBountyEscrow(gl.Contract):
         self._withdraw_to(gl.message.sender_address)
 
     @gl.public.write
-    def withdraw_to(self, recipient: str) -> None:
+    def withdraw_to(self, recipient: Address | str) -> None:
         """Request transfer of mature caller credit to a chosen address."""
-        if not re.fullmatch("0x[0-9a-fA-F]{40}", recipient):
+        if not isinstance(recipient, Address) and (
+            not isinstance(recipient, str) or not re.fullmatch("0x[0-9a-fA-F]{40}", recipient)
+        ):
             _error("INVALID_RECIPIENT")
-        address = Address(recipient)
+        address = _wallet_address(recipient)
         if address == Address(ZERO_ADDRESS) or address == gl.message.contract_address:
             _error("INVALID_RECIPIENT")
         self._withdraw_to(address)

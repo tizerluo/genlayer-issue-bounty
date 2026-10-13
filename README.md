@@ -11,7 +11,7 @@ normal formatting and public method docstrings. A stored ZIP
 packages its exact source as a zlib payload with a checksum-verified Python
 loader. Semantic verification tolerates compressor differences; deployment
 verification pins the exact artifact hash. The pending candidate's readable source is
-**39,411 bytes**; its deployment package is **11,397 bytes**. The historical
+**39,614 bytes**; its deployment package is **11,459 bytes**. The historical
 Bradbury estimate of **9,674,026 gas** (target <15.5M) applies to the deployed
 **11,122-byte** package (`a8e13eac…23c8`); the candidate has no gas estimate yet.
 Upload package bytes for redeployment; a raw Python upload still exceeds the cap.
@@ -75,7 +75,7 @@ Validators read their own evidence and call their own LLM. The decision is ACCEP
 | `submit_claim(bounty_id, pr_number)` | Record a rejection or award escrow to claimant credit |
 | `refund(bounty_id)` | Creator only, OPEN and strictly after deadline + grace |
 | `withdraw()` | After the credit hold, clear caller's positive credit and request a transfer to the caller |
-| `withdraw_to(recipient)` | Same credit/hold checks; caller chooses a receiving EOA; zero, malformed and escrow addresses are rejected |
+| `withdraw_to(recipient: Address \| str)` | Same credit/hold checks; caller chooses a receiving EOA using a CLI Address or hex string; zero, malformed and escrow addresses are rejected |
 | `sweep_surplus()` | Fixed treasury caller only; request transfer to that treasury of `balance - (total_escrowed + total_credits)` when positive |
 
 Constructor: `(claim_grace_seconds, max_claims_per_claimant, treasury)` must be supplied explicitly. Exact deployment arguments:
@@ -106,7 +106,7 @@ python scripts/check.py typecheck contracts/issue_bounty_escrow.py
 pytest tests/direct tests/experiments -v -W error::RuntimeWarning
 ```
 
-The cache wrapper runs the official GenVM linter/semantic validator without suppressing rules. Caches live in a user-owned mode-0700 directory under `~/.cache/issue-bounty`, with a fresh private temporary directory if HOME is read-only. Ownership, permissions and symlinks are checked before loading code. A persistent private cache can be selected with `ISSUE_BOUNTY_CACHE_DIR`; this workspace uses `/home/box/.genlayer/issue-bounty-cache`. Set `GENVM_VERSION=v0.2.12` for lint/typecheck; direct tests pin that same release explicitly. Tests use the actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **371 passed**, including deployment hash guards, honest merge formats, trusted mergers, surplus protection and semantic package checks.
+The cache wrapper runs the official GenVM linter/semantic validator without suppressing rules. Caches live in a user-owned mode-0700 directory under `~/.cache/issue-bounty`, with a fresh private temporary directory if HOME is read-only. Ownership, permissions and symlinks are checked before loading code. A persistent private cache can be selected with `ISSUE_BOUNTY_CACHE_DIR`; this workspace uses `/home/box/.genlayer/issue-bounty-cache`. Set `GENVM_VERSION=v0.2.12` for lint/typecheck; direct tests pin that same release explicitly. Tests use the actual SDK, sanitized public fixtures, strict mocks, fixed transaction time and closure pickling checks. Current result: **394 passed**, including deployment hash guards, honest merge formats, trusted mergers, surplus protection and semantic package checks.
 The complete suite also passes against the shipped loader with
 `ISSUE_BOUNTY_TEST_PACKAGE=1`. SDK lint, semantic validation and typecheck pass;
 the generated ABI matches [artifacts/abi.json](artifacts/abi.json) exactly.
@@ -165,6 +165,8 @@ The historical PRs #2/#3 and old address-only gist in the [sandbox manifest](dep
 Identity uses numeric ids, nonce-bound owner-checked proofs and persistent attempt counts across wallet migration. Prompt text is stripped of Unicode controls/format characters and U+2028/U+2029. Potential delimiter openings are escaped, while code comparisons and generic openings are preserved; data is JSON encoded. Stored summaries strip HTTP(S) URLs but remain leader-provided display text: any frontend must HTML-escape them. Sponsor criteria are inspection targets in `<acceptance_criteria>`; the judge uses only diff implementation evidence and excludes editable PR title/body. All nondeterministic captures are plain memory values. See [architecture](docs/ARCHITECTURE.md), [threat model](docs/THREAT_MODEL.md) and [review fix/test mapping](progress.md#review-round-1).
 
 GitHub edits/rate limits can halt consensus. Issue linking accepts `Fix/Fixes/Fixed`, `Close/Closes/Closed`, or `Resolve/Resolves/Resolved` (case-insensitive, optional colon) followed by `#n`, `owner/repo#n`, or a full GitHub issue URL anywhere in the merge commit message, PR title, or PR body fetched at claim time, including comma lists. Repository and issue must match exactly (repository case is ignored); bare references without a closing keyword are insufficient. SHA-matched issue closure events remain a fallback. PR title/body are editable and establish linking only; the AI judges implementation from the diff. The default branch is read at claim time and can change. Independent GitHub ids do not prevent colluding accounts. The first 12,000 diff characters are judged; missing evidence is rejected. A completed truncated-diff judgment cannot be resampled. Keep PRs small enough to show all criteria within that bound. A GitHub diff HTTP 406 returns `[EXTERNAL] DIFF_TOO_LARGE` without recording a claim or consuming an attempt. LLM judgments remain fallible.
+
+Closing keywords preceded by a word character, `-`, `/`, or `#` do not link. As with GitHub closing-keyword matching, negated phrasing such as `does not fix #1` still establishes linking; the parser does not interpret negation. Acceptance and payout remain gated by the diff-only AI judge and every other claim check.
 
 Awards record transaction-time `awarded_at`; a positive award locks the wallet's aggregate credit until at least `awarded_at + FINALITY_DELAY` (seven days). Later awards extend the hold for all credits, including previously matured awards/refunds. Refund-only credit is immediately withdrawable. Both withdrawal methods enforce the same hold and clear credit before emitting a transfer. `withdraw_to` lets a contract-wallet caller choose an EOA; the contract cannot establish that an address is an EOA. Synchronous request-emission errors propagate and the transaction host rolls back the entire transaction; there is no local recovery branch. Direct mode does not implement that rollback, so its failure test verifies propagation only.
 

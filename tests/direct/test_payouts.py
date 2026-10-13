@@ -105,23 +105,28 @@ def test_events(escrow,direct_vm):
     events=[r['EmitEvent'] for r in requests if 'EmitEvent' in r]
     assert len(events) == 1
 
-@pytest.mark.parametrize('method,args', [('withdraw',[]),('withdraw_to',['0x'+'2'*40])])
-def test_award_cannot_withdraw_before_finality(ready,direct_vm,method,args):
+@pytest.mark.parametrize('method,as_string', [('withdraw',True),('withdraw_to',True),
+                                           ('withdraw_to',False)])
+def test_award_cannot_withdraw_before_finality(ready,direct_vm,method,as_string):
     pr(direct_vm)
     verdict(direct_vm)
     ready.submit_claim(0,34)
     direct_vm.warp('2026-10-18T23:59:59Z')
+    recipient=create_address('recipient-eoa')
+    args=[] if method == 'withdraw' else [recipient.as_hex if as_string else recipient]
     with direct_vm.expect_revert('WITHDRAW_NOT_FINAL'):
         getattr(ready,method)(*args)
     assert ready.get_credit(direct_vm.sender.as_hex) == 123
     conserved(ready,123)
 
-def test_withdraw_to_uses_callers_credit(ready,direct_vm):
+@pytest.mark.parametrize('as_string', [False, True], ids=['address', 'str'])
+def test_withdraw_to_uses_callers_credit(ready,direct_vm,as_string):
     pr(direct_vm)
     verdict(direct_vm)
     ready.submit_claim(0,34)
     sender=direct_vm.sender
     recipient=create_address('recipient-eoa')
+    argument=recipient.as_hex if as_string else recipient
     direct_vm.warp('2026-10-19T00:00:00Z')
     requests=[]
     transfer_model=direct_vm._gl_call_hook
@@ -131,24 +136,29 @@ def test_withdraw_to_uses_callers_credit(ready,direct_vm):
     direct_vm._gl_call_hook=capture
     direct_vm.sender=create_address('credit-thief')
     with direct_vm.expect_revert('NOTHING_TO_WITHDRAW'):
-        ready.withdraw_to(recipient.as_hex)
+        ready.withdraw_to(argument)
     direct_vm.sender=sender
-    ready.withdraw_to(recipient.as_hex)
+    ready.withdraw_to(argument)
     sends=[r['EthSend'] for r in requests if 'EthSend' in r]
     assert len(sends)==1 and sends[0]['address']==recipient and sends[0]['value']==123
     assert ready.get_credit_unlock_at(sender.as_hex)==0
     conserved(ready,123)
 
-@pytest.mark.parametrize('recipient',['0x'+'0'*40,'bad','0x123'])
+@pytest.mark.parametrize('recipient',['0x'+'0'*40,'bad','0x123',None,123])
 def test_invalid_recipient_leaves_credit(ready,direct_vm,recipient):
     with direct_vm.expect_revert('INVALID_RECIPIENT'):
         ready.withdraw_to(recipient)
     conserved(ready,123)
 
-def test_contract_recipient_rejected(ready,direct_vm):
+@pytest.mark.parametrize('as_string', [False, True], ids=['address', 'str'])
+@pytest.mark.parametrize('destination', ['zero', 'contract'])
+def test_forbidden_recipient_rejected(ready,direct_vm,as_string,destination):
     from genlayer import Address
+    recipient=Address('0x'+'0'*40 if destination == 'zero' else direct_vm._contract_address)
+    argument=recipient.as_hex if as_string else recipient
     with direct_vm.expect_revert('INVALID_RECIPIENT'):
-        ready.withdraw_to(Address(direct_vm._contract_address).as_hex)
+        ready.withdraw_to(argument)
+    conserved(ready,123)
 
 def test_new_award_cannot_shorten_existing_credit_hold(ready,direct_vm):
     pr(direct_vm)

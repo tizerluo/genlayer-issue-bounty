@@ -1,6 +1,6 @@
 {
   "runtime": "GenVM v0.2.12 / pinned CPython Wasm",
-  "package_sha256": "52a2e21424caf686a5640fd67393ebc8aef756e942afd29f3216ce9a831173a7",
+  "package_sha256": "5f8f8e439202f7a50f7e9287c08e8a86b01c20ce242426327633202d7491d971",
   "constructor": "RETURN null",
   "sdk_schema_matches_abi": true,
   "constructor_args": [
@@ -12,7 +12,7 @@
     "constructor",
     "schema"
   ],
-  "callback_probe_package_sha256": "cc53151c0b7aeb2384340fc3102dd85e0a641e053d89c4d777ccdc945bd8e062",
+  "callback_probe_package_sha256": "b787c51df6a3bf3dec17b00180d46e230fc48a28ac5a4037c961f8a45ab3fae8",
   "callback_probe_uses_modified_package": true,
   "nondeterministic_child_loader": "passed",
   "sandbox_child_loader": "passed",

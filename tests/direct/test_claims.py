@@ -108,7 +108,8 @@ def test_truncated_and_escaped(ready,direct_vm):
 @pytest.mark.parametrize('message', [
     'https://github.com/owner/project/issues/12', 'Fixes #123', 'Fixes #112',
     'Fixes other/project#12', 'Fixes https://github.com/other/project/issues/12',
-    'prefixes #12', '-Fixes #12', 'Fixes #12suffix', 'Fixes #13, #123', 'Fixes #13, other/project#12'])
+    'prefixes #12', '-Fixes #12', 'pre/fixes #12', '#fixes #12',
+    'Fixes #12suffix', 'Fixes #13, #123', 'Fixes #13, other/project#12'])
 def test_invalid_references_do_not_reach_judging(ready,direct_vm,message):
     pr(direct_vm,commit_message=message,title=message,body=message)
     ready.submit_claim(0,34)

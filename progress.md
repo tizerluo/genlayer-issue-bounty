@@ -366,3 +366,20 @@ Validation and candidate identity:
   SHA-256 `52a2e21424caf686a5640fd67393ebc8aef756e942afd29f3216ce9a831173a7`.
   Regenerated ABI (unchanged) and refreshed local GenVM runtime evidence.
 - Local commit only; no deployment, push, network writes, or real keys accessed.
+
+## Round 3 reviewer fixes (2026-10-13)
+
+- Removed overlapping separator whitespace quantifiers and audited the remaining
+  delimiter-separated reference/list runs. `/` and `#` keyword prefixes are rejected.
+  Eight malformed 65,536-character-run cases return false and reject PR bodies
+  within one second in both source/package tests. Documented negated linking and
+  verified that diff-only judgment still gates acceptance.
+- `withdraw_to` accepts `Address | str`; both inputs cover caller credit, finality,
+  zero/escrow recipients and transfer destination. Regenerated the SDK ABI.
+- All four CI commands pass with GenVM v0.2.12: check `--json`, typecheck and
+  **394 passed** in each source/package suite, with RuntimeWarnings fatal.
+- Rebuilt ZIP/manifest (**11,459 bytes**, SHA-256
+  `5f8f8e439202f7a50f7e9287c08e8a86b01c20ce242426327633202d7491d971`)
+  and refreshed local GenVM constructor/schema/child-loader evidence.
+- Local commit only; no deployment, push, network writes, keys or forbidden
+  directory reads.
