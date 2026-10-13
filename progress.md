@@ -330,3 +330,25 @@ Validation and candidate identity:
 - Root cause: GitHub's merge-commit message is "Merge pull request #4 …\n\n<PR title>" (no PR body), and the issue's `closed` event from a PR merge has commit_id = null. So neither _references_issue nor _closed_by_commit can match. Live web fetches of PR/commit/events via GenVM on Bradbury worked and reached consensus (strict_eq).
 - Fix options: (a) accept `cross-referenced`/`closed` timeline evidence tied to the merged PR (timeline closed event's `source`/PR link, or GraphQL closingIssuesReferences locked at merge); (b) require squash merges (commit message includes PR body) and document it; (c) re-merge not possible for PR #4. Needs contract change + redeploy.
 - Second bug: view get_credit/get_credit_unlock_at crash (`TypeError: cannot convert 'Address' object to bytes`) when the CLI passes a 0x address (it's encoded as Address, then wrapped in Address() again). Fix: accept `Address | str`.
+
+## Live claim #0 fixes (2026-10-13)
+- All four wallet views accept `Address | str` through `_wallet_address`, avoiding
+  double construction while preserving genlayer-js string calls.
+- Closing keywords now link exact local, repository-qualified, or full-URL issues
+  anywhere in merge messages, claim-time PR titles, or nullable PR bodies,
+  case-insensitively and with optional colons/comma lists. Other gates and the
+  SHA-matched closure fallback are preserved; the judge still uses only the diff.
+- Direct regressions cover both wallet inputs, all reference sources/keywords,
+  exact boundaries/wrong targets/null bodies, and body-only default merges reaching
+  judging. Updated strict mocks and current reference-policy documentation.
+- Activated `.venv`, pinned `GENVM_VERSION=v0.2.12`: all four requested CI commands
+  passed (check `--json`, typecheck, direct/experiments **300 passed** in source
+  mode and **300 passed** with `ISSUE_BOUNTY_TEST_PACKAGE=1`, RuntimeWarnings fatal).
+- Rebuilt with `scripts/build_contract_package.py`: source **38,998 bytes**, SHA-256
+  `5daea8ed3c33b1272ae9e78327e4b765d2242f897342351ffede345b47b44b3a`;
+  ZIP **11,244 bytes**, SHA-256
+  `0adb5adfb744c9d6367e1e7161313b33b4ccd5661f37e5dcb7541816283f9283`.
+  Regenerated ABI and ran `scripts/verify_contract_package.py`: exact ZIP
+  constructor/schema and temporary child-VM loader probes pass in local GenVM.
+- Local fix branch only; no deployment, push, network writes, or real wallet/key
+  access. The rebuilt ZIP is a new deployment candidate.
